@@ -1,0 +1,7 @@
+1. A custom chatbot plugin for wordpress.
+2. Should use Gemini API
+3. Should answer based on the customer question
+4. It will have knowledge about the website. 
+5. The UI should be clean and simple.
+6. The chatbot will be place on the bottom right side of the site
+7. Need only a simple chatbot, do not over engineer 
