@@ -22,24 +22,75 @@ define('BAACHAL_PLUGIN_PATH', plugin_dir_path(__FILE__));
 class Baachal {
     
     public function __construct() {
-        add_action('init', array($this, 'init'));
-        add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-        add_action('wp_footer', array($this, 'add_chatbot_html'));
-        add_action('wp_ajax_chatbot_message', array($this, 'handle_chatbot_message'));
-        add_action('wp_ajax_nopriv_chatbot_message', array($this, 'handle_chatbot_message'));
-        add_action('wp_ajax_get_chat_history', array($this, 'get_chat_history'));
-        add_action('wp_ajax_nopriv_get_chat_history', array($this, 'get_chat_history'));
-        add_action('wp_ajax_clear_chat_history', array($this, 'clear_chat_history'));
-        add_action('wp_ajax_nopriv_clear_chat_history', array($this, 'clear_chat_history'));
-        add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('admin_init', array($this, 'register_settings'));
-        add_action('add_meta_boxes', array($this, 'add_chat_meta_boxes'));
+        // Allow other plugins to modify the hooks that get registered
+        $hooks = apply_filters('baachal_register_hooks', array(
+            'init' => array($this, 'init'),
+            'wp_enqueue_scripts' => array($this, 'enqueue_scripts'),
+            'wp_footer' => array($this, 'add_chatbot_html'),
+            'wp_ajax_chatbot_message' => array($this, 'handle_chatbot_message'),
+            'wp_ajax_nopriv_chatbot_message' => array($this, 'handle_chatbot_message'),
+            'wp_ajax_get_chat_history' => array($this, 'get_chat_history'),
+            'wp_ajax_nopriv_get_chat_history' => array($this, 'get_chat_history'),
+            'wp_ajax_clear_chat_history' => array($this, 'clear_chat_history'),
+            'wp_ajax_nopriv_clear_chat_history' => array($this, 'clear_chat_history'),
+            'admin_menu' => array($this, 'add_admin_menu'),
+            'admin_init' => array($this, 'register_settings'),
+            'add_meta_boxes' => array($this, 'add_chat_meta_boxes')
+        ));
+        
+        // Register all hooks
+        foreach ($hooks as $hook => $callback) {
+            add_action($hook, $callback);
+        }
+        
         register_activation_hook(__FILE__, array($this, 'activate_plugin'));
+        
+        // Clear product cache when products are updated
+        add_action('save_post', array($this, 'clear_product_cache_on_update'));
+        add_action('delete_post', array($this, 'clear_product_cache_on_update'));
+        add_action('wp_trash_post', array($this, 'clear_product_cache_on_update'));
+        add_action('untrash_post', array($this, 'clear_product_cache_on_update'));
+        
+        // Clear cache when taxonomies are updated
+        add_action('created_term', array($this, 'clear_dynamic_terms_cache'));
+        add_action('edited_term', array($this, 'clear_dynamic_terms_cache'));
+        add_action('delete_term', array($this, 'clear_dynamic_terms_cache'));
+        
+        // Clear cache when product attributes are updated
+        add_action('woocommerce_attribute_added', array($this, 'clear_dynamic_terms_cache'));
+        add_action('woocommerce_attribute_updated', array($this, 'clear_dynamic_terms_cache'));
+        add_action('woocommerce_attribute_deleted', array($this, 'clear_dynamic_terms_cache'));
+        
+        // Allow other plugins to perform actions after plugin initialization
+        do_action('baachal_init', $this);
+    }
+    
+    public function clear_dynamic_terms_cache() {
+        delete_transient('baachal_dynamic_terms');
+    }
+    
+    public function clear_product_cache_on_update($post_id) {
+        $post = get_post($post_id);
+        if ($post && $post->post_type === 'product') {
+            // Clear all product search cache
+            global $wpdb;
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_baachal_products_%'");
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_baachal_products_%'");
+            
+            // Clear dynamic terms cache as product catalog has changed
+            delete_transient('baachal_dynamic_terms');
+        }
     }
     
     public function init() {
+        // Allow other plugins to perform actions before initialization
+        do_action('baachal_before_init');
+        
         // Register custom post type for chat conversations
         $this->register_chat_post_type();
+        
+        // Allow other plugins to perform actions after initialization
+        do_action('baachal_after_init');
     }
     
     public function activate_plugin() {
@@ -85,26 +136,46 @@ class Baachal {
     }
     
     public function enqueue_scripts() {
-        wp_enqueue_script('baachal-js', BAACHAL_PLUGIN_URL . 'assets/chatbot.js', array('jquery'), BAACHAL_VERSION, true);
-        wp_enqueue_style('baachal-css', BAACHAL_PLUGIN_URL . 'assets/chatbot.css', array(), BAACHAL_VERSION);
+        // Allow other plugins to modify script dependencies
+        $js_dependencies = apply_filters('baachal_js_dependencies', array('jquery'));
+        $css_dependencies = apply_filters('baachal_css_dependencies', array());
         
-        // Localize script for AJAX
-        wp_localize_script('baachal-js', 'chatbot_ajax', array(
+        wp_enqueue_script('baachal-js', BAACHAL_PLUGIN_URL . 'assets/chatbot.js', $js_dependencies, BAACHAL_VERSION, true);
+        wp_enqueue_style('baachal-css', BAACHAL_PLUGIN_URL . 'assets/chatbot.css', $css_dependencies, BAACHAL_VERSION);
+        
+        // Allow other plugins to modify localized data
+        $localized_data = apply_filters('baachal_localized_data', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('chatbot_nonce'),
             'debug_mode' => get_option('chatbot_debug_mode', '0'),
             'message_persistence' => get_option('chatbot_message_persistence', '1'),
             'session_id' => $this->get_chat_session_id()
         ));
+        
+        // Localize script for AJAX
+        wp_localize_script('baachal-js', 'chatbot_ajax', $localized_data);
+        
+        // Allow other plugins to enqueue additional scripts/styles
+        do_action('baachal_after_enqueue_scripts');
     }
     
     public function add_chatbot_html() {
         $is_enabled = get_option('chatbot_enabled', '1');
+        
+        // Allow other plugins to override the enabled state
+        $is_enabled = apply_filters('baachal_is_enabled', $is_enabled);
+        
         if ($is_enabled !== '1') {
             return;
         }
         
+        // Allow other plugins to add content before widget
+        do_action('baachal_before_widget_render');
+        
         include BAACHAL_PLUGIN_PATH . 'templates/chatbot-widget.php';
+        
+        // Allow other plugins to add content after widget
+        do_action('baachal_after_widget_render');
     }
     
     public function handle_chatbot_message() {
@@ -114,6 +185,27 @@ class Baachal {
         }
         
         $message = sanitize_text_field($_POST['message']);
+        
+        // Allow other plugins to modify the user message before processing
+        $message = apply_filters('baachal_before_process_message', $message, $_POST);
+        
+        // Allow other plugins to handle the message entirely
+        $custom_response = apply_filters('baachal_custom_message_handler', null, $message, $_POST);
+        
+        if ($custom_response !== null) {
+            // Custom handler provided a response
+            if (is_array($custom_response) && isset($custom_response['success'])) {
+                if ($custom_response['success']) {
+                    wp_send_json_success($custom_response['data']);
+                } else {
+                    wp_send_json_error($custom_response['error']);
+                }
+            } else {
+                wp_send_json_success($custom_response);
+            }
+            return;
+        }
+        
         $api_key = get_option('chatbot_gemini_api_key');
         
         if (empty($api_key)) {
@@ -121,16 +213,34 @@ class Baachal {
             return;
         }
         
-        $result = $this->call_gemini_api($message, $api_key);
+        // Allow other plugins to modify API parameters
+        $api_params = apply_filters('baachal_api_params', array(
+            'message' => $message,
+            'api_key' => $api_key
+        ), $_POST);
+        
+        $result = $this->call_gemini_api($api_params['message'], $api_params['api_key']);
         
         if ($result['success']) {
+            // Allow other plugins to modify the response before saving/sending
+            $bot_response = apply_filters('baachal_bot_response', $result['data'], $message, $result);
+            
             // Save both user message and bot response
             $this->save_chat_message($message, 'user');
-            $this->save_chat_message($result['data'], 'bot');
+            $this->save_chat_message($bot_response, 'bot');
             
-            wp_send_json_success($result['data']);
+            // Allow other plugins to perform actions after successful response
+            do_action('baachal_after_successful_response', $bot_response, $message, $result);
+            
+            wp_send_json_success($bot_response);
         } else {
-            wp_send_json_error($result['error']);
+            // Allow other plugins to modify error response
+            $error_response = apply_filters('baachal_error_response', $result['error'], $message, $result);
+            
+            // Allow other plugins to perform actions after error
+            do_action('baachal_after_error_response', $error_response, $message, $result);
+            
+            wp_send_json_error($error_response);
         }
     }
     
@@ -149,6 +259,13 @@ class Baachal {
     }
     
     private function save_chat_message($message, $type) {
+        // Allow other plugins to prevent message saving
+        $should_save = apply_filters('baachal_should_save_message', true, $message, $type);
+        
+        if (!$should_save) {
+            return;
+        }
+        
         if (get_option('chatbot_message_persistence', '1') !== '1') {
             return; // Don't save if persistence is disabled
         }
@@ -156,8 +273,17 @@ class Baachal {
         $session_id = $this->get_chat_session_id();
         $user_id = get_current_user_id();
         
+        // Allow other plugins to modify message data before saving
+        $message_data = apply_filters('baachal_before_save_message', array(
+            'message' => $message,
+            'type' => $type,
+            'session_id' => $session_id,
+            'user_id' => $user_id,
+            'timestamp' => current_time('mysql')
+        ));
+        
         // Find or create conversation post
-        $conversation_id = $this->get_or_create_conversation($session_id, $user_id);
+        $conversation_id = $this->get_or_create_conversation($message_data['session_id'], $message_data['user_id']);
         
         if ($conversation_id) {
             // Get existing messages
@@ -167,16 +293,14 @@ class Baachal {
             }
             
             // Add new message
-            $messages[] = array(
-                'message' => $message,
-                'type' => $type,
-                'timestamp' => current_time('mysql'),
-                'user_id' => $user_id
-            );
+            $messages[] = $message_data;
             
-            // Keep only last 100 messages per conversation
-            if (count($messages) > 100) {
-                $messages = array_slice($messages, -100);
+            // Allow other plugins to modify the message limit
+            $message_limit = apply_filters('baachal_message_limit', 100);
+            
+            // Keep only last X messages per conversation
+            if (count($messages) > $message_limit) {
+                $messages = array_slice($messages, -$message_limit);
             }
             
             // Update messages
@@ -184,13 +308,16 @@ class Baachal {
             
             // Update conversation title if it's just the default
             $current_title = get_the_title($conversation_id);
-            if (strpos($current_title, 'Chat Session') !== false && $type === 'user') {
-                $new_title = 'Chat: ' . wp_trim_words($message, 5, '...');
+            if (strpos($current_title, 'Chat Session') !== false && $message_data['type'] === 'user') {
+                $new_title = apply_filters('baachal_conversation_title', 'Chat: ' . wp_trim_words($message_data['message'], 5, '...'), $message_data['message'], $conversation_id);
                 wp_update_post(array(
                     'ID' => $conversation_id,
                     'post_title' => $new_title
                 ));
             }
+            
+            // Allow other plugins to perform actions after saving message
+            do_action('baachal_after_save_message', $message_data, $conversation_id, $messages);
         }
     }
     
@@ -426,11 +553,26 @@ class Baachal {
             return '';
         }
         
+        // Debug logging if enabled
+        $debug_mode = get_option('chatbot_debug_mode', '0') === '1';
+        
         // If we have a user message, get relevant products using embeddings
         if (!empty($user_message)) {
+            if ($debug_mode) {
+                error_log('Baachal: Searching for products with message: ' . $user_message);
+            }
+            
             $relevant_products = $this->get_relevant_products($user_message);
             if (!empty($relevant_products)) {
+                if ($debug_mode) {
+                    $product_titles = array_map(function($p) { return $p->post_title; }, $relevant_products);
+                    error_log('Baachal: Found products: ' . implode(', ', $product_titles));
+                }
                 return $this->format_products_context($relevant_products);
+            } else {
+                if ($debug_mode) {
+                    error_log('Baachal: No relevant products found for: ' . $user_message);
+                }
             }
         }
         
@@ -439,6 +581,15 @@ class Baachal {
     }
     
     private function get_relevant_products($user_message, $limit = 5) {
+        // Create a cache key based on the user message
+        $cache_key = 'baachal_products_' . md5(strtolower($user_message)) . '_' . $limit;
+        
+        // Try to get from cache first (valid for 1 hour)
+        $cached_products = get_transient($cache_key);
+        if ($cached_products !== false) {
+            return $cached_products;
+        }
+        
         // First, try to find products using WordPress search and keywords
         $products = $this->search_products_by_keywords($user_message, $limit);
         
@@ -448,82 +599,475 @@ class Baachal {
             $products = array_merge($products, $additional);
         }
         
-        return array_slice($products, 0, $limit);
+        $final_products = array_slice($products, 0, $limit);
+        
+        // Cache the results for 1 hour
+        set_transient($cache_key, $final_products, HOUR_IN_SECONDS);
+        
+        return $final_products;
     }
     
     private function search_products_by_keywords($user_message, $limit = 5) {
-        // Extract keywords from user message
-        $keywords = $this->extract_keywords($user_message);
+        // Extract keywords from user message - improved version
+        $keywords = $this->extract_keywords_improved($user_message);
         
         if (empty($keywords)) {
             return array();
         }
         
-        // Search products by title, content, and meta
-        $args = array(
-            'post_type' => 'product',
-            'posts_per_page' => $limit * 2, // Get more to filter
-            'post_status' => 'publish',
-            'meta_query' => array(
-                array(
-                    'key' => '_visibility',
-                    'value' => array('catalog', 'visible'),
-                    'compare' => 'IN'
-                )
-            ),
-            's' => implode(' ', $keywords) // WordPress search
-        );
+        // Multi-stage search for better accuracy
+        $products = array();
         
-        $products = get_posts($args);
-        $valid_products = array();
+        // Stage 1: Exact phrase search in titles
+        $exact_products = $this->search_by_exact_phrase($user_message, $limit);
+        $products = array_merge($products, $exact_products);
+        
+        // Stage 2: Search by individual keywords with weighted scoring
+        if (count($products) < $limit) {
+            $keyword_products = $this->search_by_weighted_keywords($keywords, $limit - count($products));
+            $products = array_merge($products, $keyword_products);
+        }
+        
+        // Stage 3: Search product attributes and variations
+        if (count($products) < $limit) {
+            $attribute_products = $this->search_by_attributes($keywords, $limit - count($products));
+            $products = array_merge($products, $attribute_products);
+        }
+        
+        // Stage 4: Search categories and tags
+        if (count($products) < $limit) {
+            $taxonomy_products = $this->search_by_taxonomies($keywords, $limit - count($products));
+            $products = array_merge($products, $taxonomy_products);
+        }
+        
+        // Remove duplicates and return
+        $unique_products = array();
+        $seen_ids = array();
         
         foreach ($products as $product) {
-            $wc_product = wc_get_product($product->ID);
-            if ($wc_product && $wc_product->is_visible() && $wc_product->is_purchasable()) {
-                $valid_products[] = $product;
-                if (count($valid_products) >= $limit) {
-                    break;
-                }
+            if (!in_array($product->ID, $seen_ids)) {
+                $seen_ids[] = $product->ID;
+                $unique_products[] = $product;
             }
         }
         
-        return $valid_products;
+        return array_slice($unique_products, 0, $limit);
     }
     
-    private function extract_keywords($message) {
-        // Convert to lowercase and remove special characters
+    private function extract_keywords_improved($message) {
+        // Convert to lowercase but preserve important product terms
         $message = strtolower($message);
-        $message = preg_replace('/[^a-z0-9\s]/', ' ', $message);
         
-        // Split into words
+        // Get dynamic important terms from the store's products
+        $important_terms = $this->get_dynamic_product_terms();
+        
+        // Extract multi-word important terms first
+        $extracted_terms = array();
+        foreach ($important_terms as $term) {
+            if (strpos($message, $term) !== false) {
+                $extracted_terms[] = $term;
+                // Replace with placeholder to avoid double processing
+                $message = str_replace($term, ' __TERM__ ', $message);
+            }
+        }
+        
+        // Clean up remaining text and split into words
+        $message = preg_replace('/[^a-z0-9\s]/', ' ', $message);
         $words = explode(' ', $message);
         
-        // Remove common stop words
+        // Minimal stop words - keep product-related terms
         $stop_words = array(
-            'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours',
-            'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers',
-            'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves',
-            'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are',
-            'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does',
-            'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until',
-            'while', 'of', 'at', 'by', 'for', 'with', 'through', 'during', 'before', 'after',
-            'above', 'below', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again',
-            'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all',
-            'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor',
-            'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just',
-            'should', 'now', 'want', 'need', 'looking', 'find', 'show', 'get', 'buy', 'purchase'
+            'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her',
+            'it', 'its', 'they', 'them', 'their', 'this', 'that', 'these', 'those',
+            'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+            'do', 'does', 'did', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'as',
+            'of', 'at', 'by', 'for', 'with', 'in', 'on', 'to', 'from',
+            'here', 'there', 'when', 'where', 'how', 'all', 'any', 'some', 'no', 'not',
+            'can', 'will', 'just', 'should', 'now', '__term__'
         );
         
         // Filter words
         $keywords = array();
         foreach ($words as $word) {
             $word = trim($word);
-            if (strlen($word) > 2 && !in_array($word, $stop_words) && !is_numeric($word)) {
+            if (strlen($word) > 2 && !in_array($word, $stop_words)) {
                 $keywords[] = $word;
             }
         }
         
-        return array_unique($keywords);
+        // Combine extracted terms with individual keywords
+        return array_unique(array_merge($extracted_terms, $keywords));
+    }
+    
+    private function get_dynamic_product_terms() {
+        // Cache key for product terms
+        $cache_key = 'baachal_dynamic_terms';
+        
+        // Try to get from cache first
+        $cached_terms = get_transient($cache_key);
+        if ($cached_terms !== false) {
+            return $cached_terms;
+        }
+        
+        $important_terms = array();
+        
+        // Get configurable settings with defaults
+        $max_terms = get_option('chatbot_max_terms', 50);
+        $min_term_length = get_option('chatbot_min_term_length', 3);
+        $cache_duration = get_option('chatbot_cache_duration', DAY_IN_SECONDS);
+        $exclude_terms = get_option('chatbot_exclude_terms', array('the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'size', 'color', 'item', 'product'));
+        
+        // Ensure exclude_terms is an array
+        if (!is_array($exclude_terms)) {
+            $exclude_terms = explode(',', $exclude_terms);
+            $exclude_terms = array_map('trim', $exclude_terms);
+        }
+        
+        // Get common terms from product categories
+        $category_terms = $this->extract_category_terms($exclude_terms, $min_term_length);
+        $important_terms = array_merge($important_terms, $category_terms);
+        
+        // Get common terms from product attributes
+        $attribute_terms = $this->extract_attribute_terms($exclude_terms, $min_term_length);
+        $important_terms = array_merge($important_terms, $attribute_terms);
+        
+        // Get common terms from product tags
+        $tag_terms = $this->extract_tag_terms($exclude_terms, $min_term_length);
+        $important_terms = array_merge($important_terms, $tag_terms);
+        
+        // Get common multi-word phrases from product titles
+        $title_phrases = $this->extract_title_phrases($exclude_terms, $min_term_length);
+        $important_terms = array_merge($important_terms, $title_phrases);
+        
+        // Remove duplicates and sort by length (longer terms first)
+        $important_terms = array_unique($important_terms);
+        usort($important_terms, function($a, $b) {
+            return strlen($b) - strlen($a);
+        });
+        
+        // Limit to max terms
+        if (count($important_terms) > $max_terms) {
+            $important_terms = array_slice($important_terms, 0, $max_terms);
+        }
+        
+        // Allow store owners to add custom terms via filter
+        $important_terms = apply_filters('baachal_important_product_terms', $important_terms);
+        
+        // Cache for configured duration
+        set_transient($cache_key, $important_terms, $cache_duration);
+        
+        return $important_terms;
+    }
+    
+    private function extract_category_terms($exclude_terms = array(), $min_term_length = 3) {
+        $terms = array();
+        
+        // Get all product categories
+        $categories = get_terms(array(
+            'taxonomy' => 'product_cat',
+            'hide_empty' => true,
+            'number' => 50 // Limit to prevent too many terms
+        ));
+        
+        foreach ($categories as $category) {
+            $name = strtolower($category->name);
+            if (strlen($name) >= $min_term_length && !in_array($name, $exclude_terms)) {
+                $terms[] = $name;
+                
+                // Also add individual words from multi-word categories
+                $words = explode(' ', $name);
+                foreach ($words as $word) {
+                    $word = trim($word);
+                    if (strlen($word) >= $min_term_length && !in_array($word, $exclude_terms)) {
+                        $terms[] = $word;
+                    }
+                }
+            }
+        }
+        
+        return $terms;
+    }
+    
+    private function extract_attribute_terms($exclude_terms = array(), $min_term_length = 3) {
+        global $wpdb;
+        
+        $terms = array();
+        
+        // Get all product attributes
+        $attributes = $wpdb->get_results("
+            SELECT DISTINCT meta_key, meta_value 
+            FROM {$wpdb->postmeta} 
+            WHERE meta_key LIKE 'attribute_%' 
+            AND meta_value != ''
+            LIMIT 200
+        ");
+        
+        foreach ($attributes as $attr) {
+            // Clean attribute name
+            $attr_name = str_replace('attribute_pa_', '', $attr->meta_key);
+            $attr_name = str_replace('attribute_', '', $attr_name);
+            $attr_name = str_replace('-', ' ', $attr_name);
+            $attr_name = str_replace('_', ' ', $attr_name);
+            
+            if (strlen($attr_name) >= $min_term_length && !in_array(strtolower($attr_name), $exclude_terms)) {
+                $terms[] = strtolower($attr_name);
+            }
+            
+            // Clean attribute value
+            $attr_value = str_replace('-', ' ', $attr->meta_value);
+            $attr_value = str_replace('_', ' ', $attr_value);
+            
+            if (strlen($attr_value) >= $min_term_length && !in_array(strtolower($attr_value), $exclude_terms)) {
+                $terms[] = strtolower($attr_value);
+            }
+        }
+        
+        return $terms;
+    }
+    
+    private function extract_tag_terms($exclude_terms = array(), $min_term_length = 3) {
+        $terms = array();
+        
+        // Get all product tags
+        $tags = get_terms(array(
+            'taxonomy' => 'product_tag',
+            'hide_empty' => true,
+            'number' => 50
+        ));
+        
+        foreach ($tags as $tag) {
+            $name = strtolower($tag->name);
+            if (strlen($name) >= $min_term_length && !in_array($name, $exclude_terms)) {
+                $terms[] = $name;
+            }
+        }
+        
+        return $terms;
+    }
+    
+    private function extract_title_phrases($exclude_terms = array(), $min_term_length = 3) {
+        global $wpdb;
+        
+        $terms = array();
+        
+        // Get common phrases from product titles
+        $titles = $wpdb->get_col("
+            SELECT post_title 
+            FROM {$wpdb->posts} 
+            WHERE post_type = 'product' 
+            AND post_status = 'publish'
+            ORDER BY post_date DESC
+            LIMIT 100
+        ");
+        
+        $phrase_counts = array();
+        
+        foreach ($titles as $title) {
+            $title = strtolower($title);
+            // Extract 2-3 word phrases
+            $words = explode(' ', $title);
+            
+            for ($i = 0; $i < count($words) - 1; $i++) {
+                // 2-word phrases
+                if (isset($words[$i + 1])) {
+                    $phrase = trim($words[$i] . ' ' . $words[$i + 1]);
+                    if (strlen($phrase) >= $min_term_length * 2 && !$this->is_common_phrase($phrase, $exclude_terms)) {
+                        $phrase_counts[$phrase] = isset($phrase_counts[$phrase]) ? $phrase_counts[$phrase] + 1 : 1;
+                    }
+                }
+                
+                // 3-word phrases
+                if (isset($words[$i + 2])) {
+                    $phrase = trim($words[$i] . ' ' . $words[$i + 1] . ' ' . $words[$i + 2]);
+                    if (strlen($phrase) >= $min_term_length * 3 && !$this->is_common_phrase($phrase, $exclude_terms)) {
+                        $phrase_counts[$phrase] = isset($phrase_counts[$phrase]) ? $phrase_counts[$phrase] + 1 : 1;
+                    }
+                }
+            }
+        }
+        
+        // Keep phrases that appear at least twice
+        foreach ($phrase_counts as $phrase => $count) {
+            if ($count >= 2) {
+                $terms[] = $phrase;
+            }
+        }
+        
+        return $terms;
+    }
+    
+    private function is_common_phrase($phrase, $exclude_terms = array()) {
+        $common_phrases = array(
+            'on sale', 'for sale', 'in stock', 'out of', 'the best', 'and more',
+            'with free', 'free shipping', 'buy now', 'add to', 'view all'
+        );
+        
+        // Merge with custom exclude terms
+        $all_excludes = array_merge($common_phrases, $exclude_terms);
+        
+        return in_array($phrase, $all_excludes);
+    }
+    
+    private function search_by_exact_phrase($phrase, $limit) {
+        // Clean the phrase but keep it as a whole
+        $clean_phrase = preg_replace('/[^a-zA-Z0-9\s-]/', '', $phrase);
+        
+        $args = array(
+            'post_type' => 'product',
+            'posts_per_page' => $limit,
+            'post_status' => 'publish',
+            's' => '"' . $clean_phrase . '"', // Exact phrase search
+            'meta_query' => array(
+                array(
+                    'key' => '_visibility',
+                    'value' => array('catalog', 'visible'),
+                    'compare' => 'IN'
+                )
+            )
+        );
+        
+        return get_posts($args);
+    }
+    
+    private function search_by_weighted_keywords($keywords, $limit) {
+        global $wpdb;
+        
+        if (empty($keywords)) {
+            return array();
+        }
+        
+        // Create a weighted search query
+        $title_conditions = array();
+        $content_conditions = array();
+        
+        foreach ($keywords as $keyword) {
+            $keyword = $wpdb->esc_like($keyword);
+            $title_conditions[] = "post_title LIKE '%{$keyword}%'";
+            $content_conditions[] = "post_content LIKE '%{$keyword}%'";
+        }
+        
+        $title_sql = implode(' OR ', $title_conditions);
+        $content_sql = implode(' OR ', $content_conditions);
+        
+        // Weighted scoring: title matches worth more than content matches
+        $sql = "
+            SELECT p.ID, p.post_title,
+                   (CASE WHEN ({$title_sql}) THEN 2 ELSE 0 END) +
+                   (CASE WHEN ({$content_sql}) THEN 1 ELSE 0 END) as relevance_score
+            FROM {$wpdb->posts} p
+            WHERE p.post_type = 'product'
+            AND p.post_status = 'publish'
+            AND (({$title_sql}) OR ({$content_sql}))
+            ORDER BY relevance_score DESC, p.post_date DESC
+            LIMIT {$limit}
+        ";
+        
+        $results = $wpdb->get_results($sql);
+        $products = array();
+        
+        foreach ($results as $result) {
+            $product = get_post($result->ID);
+            if ($product) {
+                $products[] = $product;
+            }
+        }
+        
+        return $products;
+    }
+    
+    private function search_by_attributes($keywords, $limit) {
+        global $wpdb;
+        
+        if (empty($keywords)) {
+            return array();
+        }
+        
+        // Search in product attributes (like color, material, etc.)
+        $attribute_conditions = array();
+        foreach ($keywords as $keyword) {
+            $keyword = $wpdb->esc_like($keyword);
+            $attribute_conditions[] = "meta_value LIKE '%{$keyword}%'";
+        }
+        
+        if (empty($attribute_conditions)) {
+            return array();
+        }
+        
+        $conditions_sql = implode(' OR ', $attribute_conditions);
+        
+        $sql = "
+            SELECT DISTINCT p.ID, p.post_title
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+            WHERE p.post_type IN ('product', 'product_variation')
+            AND p.post_status = 'publish'
+            AND pm.meta_key LIKE 'attribute_%'
+            AND ({$conditions_sql})
+            ORDER BY p.post_date DESC
+            LIMIT {$limit}
+        ";
+        
+        $results = $wpdb->get_results($sql);
+        $products = array();
+        
+        foreach ($results as $result) {
+            // If it's a variation, get the parent product
+            $product_id = $result->ID;
+            $product = get_post($product_id);
+            
+            if ($product && $product->post_type === 'product_variation') {
+                $parent_id = wp_get_post_parent_id($product_id);
+                if ($parent_id) {
+                    $product = get_post($parent_id);
+                }
+            }
+            
+            if ($product && $product->post_type === 'product') {
+                $products[] = $product;
+            }
+        }
+        
+        return $products;
+    }
+    
+    private function search_by_taxonomies($keywords, $limit) {
+        if (empty($keywords)) {
+            return array();
+        }
+        
+        // Search in product categories and tags
+        $tax_query = array('relation' => 'OR');
+        
+        foreach ($keywords as $keyword) {
+            $tax_query[] = array(
+                'taxonomy' => 'product_cat',
+                'field' => 'name',
+                'terms' => $keyword,
+                'operator' => 'LIKE'
+            );
+            $tax_query[] = array(
+                'taxonomy' => 'product_tag',
+                'field' => 'name', 
+                'terms' => $keyword,
+                'operator' => 'LIKE'
+            );
+        }
+        
+        $args = array(
+            'post_type' => 'product',
+            'posts_per_page' => $limit,
+            'post_status' => 'publish',
+            'tax_query' => $tax_query,
+            'meta_query' => array(
+                array(
+                    'key' => '_visibility',
+                    'value' => array('catalog', 'visible'),
+                    'compare' => 'IN'
+                )
+            )
+        );
+        
+        return get_posts($args);
     }
     
     private function get_popular_products($limit = 5) {
@@ -582,7 +1126,7 @@ class Baachal {
             return '';
         }
         
-        $context = "\n\nThis is a WooCommerce online store. Here are some relevant products:\n";
+        $context = "\n\nThis is a WooCommerce online store. Here are the most relevant products matching your query:\n";
         
         foreach ($products as $product) {
             $wc_product = wc_get_product($product->ID);
@@ -591,16 +1135,31 @@ class Baachal {
                 $categories = wp_get_post_terms($product->ID, 'product_cat', array('fields' => 'names'));
                 $category_names = !empty($categories) ? implode(', ', $categories) : 'Uncategorized';
                 
-                $product_info = "- {$product->post_title}";
-                $product_info .= " (Price: {$price})";
-                $product_info .= " (Category: {$category_names})";
-                $product_info .= " (URL: " . get_permalink($product->ID) . ")";
+                $product_info = "- **{$product->post_title}**";
+                $product_info .= " | Price: {$price}";
+                $product_info .= " | Category: {$category_names}";
+                
+                // Add product attributes if available
+                $attributes = $this->get_product_attributes($wc_product);
+                if (!empty($attributes)) {
+                    $product_info .= " | " . implode(', ', $attributes);
+                }
+                
+                $product_info .= " | URL: " . get_permalink($product->ID);
                 
                 // Add short description if available
                 if ($wc_product->get_short_description()) {
                     $short_desc = wp_strip_all_tags($wc_product->get_short_description());
-                    $short_desc = substr($short_desc, 0, 80) . (strlen($short_desc) > 80 ? '...' : '');
-                    $product_info .= " - {$short_desc}";
+                    $short_desc = substr($short_desc, 0, 100) . (strlen($short_desc) > 100 ? '...' : '');
+                    $product_info .= " | Description: {$short_desc}";
+                }
+                
+                // Add stock status
+                $stock_status = $wc_product->get_stock_status();
+                if ($stock_status === 'outofstock') {
+                    $product_info .= " | **OUT OF STOCK**";
+                } elseif ($stock_status === 'onbackorder') {
+                    $product_info .= " | Available on backorder";
                 }
                 
                 $context .= $product_info . "\n";
@@ -613,8 +1172,41 @@ class Baachal {
         $context .= "- If the user asks for something not in this list, suggest the closest alternatives\n";
         $context .= "- Mention that there may be more products available and suggest browsing categories\n";
         $context .= "- Focus on helping the customer find what they need from these relevant options\n";
+        $context .= "- Pay attention to product attributes (material, color, size, etc.) when making recommendations\n";
         
         return $context;
+    }
+    
+    private function get_product_attributes($wc_product) {
+        $attributes = array();
+        
+        if (!$wc_product) {
+            return $attributes;
+        }
+        
+        // Get product attributes
+        $product_attributes = $wc_product->get_attributes();
+        
+        foreach ($product_attributes as $attribute) {
+            if ($attribute->get_visible()) {
+                $attribute_name = $attribute->get_name();
+                $attribute_label = wc_attribute_label($attribute_name);
+                
+                if ($attribute->is_taxonomy()) {
+                    $terms = wp_get_post_terms($wc_product->get_id(), $attribute_name, array('fields' => 'names'));
+                    if (!empty($terms)) {
+                        $attributes[] = $attribute_label . ': ' . implode(', ', $terms);
+                    }
+                } else {
+                    $values = $attribute->get_options();
+                    if (!empty($values)) {
+                        $attributes[] = $attribute_label . ': ' . implode(', ', $values);
+                    }
+                }
+            }
+        }
+        
+        return $attributes;
     }
     
     public function add_admin_menu() {
