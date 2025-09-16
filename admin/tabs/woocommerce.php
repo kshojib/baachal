@@ -1,0 +1,66 @@
+<?php
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
+
+<h2>WooCommerce Integration</h2>
+<p>Configure how the chatbot interacts with your WooCommerce store.</p>
+
+<?php if (class_exists('WooCommerce')): ?>
+    <div class="notice notice-info inline" style="margin: 15px 0;">
+        <p><strong>WooCommerce Detected!</strong> The chatbot can now help customers find products from your store. <?php 
+        $product_count = wp_count_posts('product')->publish;
+        echo "Found {$product_count} published products.";
+        ?></p>
+    </div>
+<?php else: ?>
+    <div class="notice notice-warning inline" style="margin: 15px 0;">
+        <p><strong>WooCommerce Not Detected!</strong> Install and activate WooCommerce to enable product integration features.</p>
+    </div>
+<?php endif; ?>
+
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="chatbot_woocommerce_integration">Enable WooCommerce Integration</label>
+        </th>
+        <td>
+            <input type="checkbox" id="chatbot_woocommerce_integration" name="chatbot_woocommerce_integration" value="1" <?php checked($woocommerce_integration, '1'); ?> <?php echo !class_exists('WooCommerce') ? 'disabled' : ''; ?> />
+            <p class="description">Allow the chatbot to help customers find products from your store</p>
+        </td>
+    </tr>
+    
+    <tr>
+        <th scope="row">
+            <label for="chatbot_message_persistence">Message Persistence</label>
+        </th>
+        <td>
+            <input type="checkbox" id="chatbot_message_persistence" name="chatbot_message_persistence" value="1" <?php checked($message_persistence, '1'); ?> />
+            <p class="description">Save chat messages in browser so they persist across page reloads</p>
+        </td>
+    </tr>
+    
+    <tr>
+        <th scope="row">
+            <label for="chatbot_show_clear_history">Show Clear History Button</label>
+        </th>
+        <td>
+            <input type="checkbox" id="chatbot_show_clear_history" name="chatbot_show_clear_history" value="1" <?php checked($show_clear_history, '1'); ?> />
+            <p class="description">Show the clear chat history button in the chatbot header</p>
+        </td>
+    </tr>
+</table>
+
+<?php if (class_exists('WooCommerce')): ?>
+<h3>Features Available:</h3>
+<ul>
+    <li>✅ Product search and recommendations</li>
+    <li>✅ Category-based product filtering</li>
+    <li>✅ Product attribute matching</li>
+    <li>✅ Inventory status information</li>
+    <li>✅ Pricing information</li>
+    <li>✅ Direct product links</li>
+</ul>
+<?php endif; ?>

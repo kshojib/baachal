@@ -33,6 +33,7 @@ class Baachal {
             'wp_ajax_nopriv_get_chat_history' => array($this, 'get_chat_history'),
             'wp_ajax_clear_chat_history' => array($this, 'clear_chat_history'),
             'wp_ajax_nopriv_clear_chat_history' => array($this, 'clear_chat_history'),
+            'wp_ajax_clear_baachal_cache' => array($this, 'handle_clear_cache_ajax'),
             'admin_menu' => array($this, 'add_admin_menu'),
             'admin_init' => array($this, 'register_settings'),
             'add_meta_boxes' => array($this, 'add_chat_meta_boxes')
@@ -143,6 +144,9 @@ class Baachal {
         wp_enqueue_script('baachal-js', BAACHAL_PLUGIN_URL . 'assets/chatbot.js', $js_dependencies, BAACHAL_VERSION, true);
         wp_enqueue_style('baachal-css', BAACHAL_PLUGIN_URL . 'assets/chatbot.css', $css_dependencies, BAACHAL_VERSION);
         
+        // Add custom styling based on settings
+        $this->add_custom_styles();
+        
         // Allow other plugins to modify localized data
         $localized_data = apply_filters('baachal_localized_data', array(
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -157,6 +161,195 @@ class Baachal {
         
         // Allow other plugins to enqueue additional scripts/styles
         do_action('baachal_after_enqueue_scripts');
+    }
+    
+    private function add_custom_styles() {
+        // Get styling options
+        $primary_color = get_option('chatbot_primary_color', '#007cba');
+        $secondary_color = get_option('chatbot_secondary_color', '#f1f1f1');
+        $position = get_option('chatbot_position', 'bottom-right');
+        $size = get_option('chatbot_size', 'medium');
+        $border_radius = get_option('chatbot_border_radius', 15);
+        $chat_height = get_option('chatbot_chat_height', 400);
+        $font_size = get_option('chatbot_font_size', 14);
+        $animation_enabled = get_option('chatbot_animation_enabled', '1');
+        
+        // Generate size-based width
+        $width_map = array(
+            'small' => '300px',
+            'medium' => '350px',
+            'large' => '400px',
+            'extra-large' => '450px'
+        );
+        $widget_width = isset($width_map[$size]) ? $width_map[$size] : $width_map['medium'];
+        
+        // Generate position styles
+        $position_styles = '';
+        switch ($position) {
+            case 'bottom-left':
+                $position_styles = 'bottom: 20px; left: 20px; right: auto; top: auto;';
+                break;
+            case 'top-right':
+                $position_styles = 'top: 20px; right: 20px; bottom: auto; left: auto;';
+                break;
+            case 'top-left':
+                $position_styles = 'top: 20px; left: 20px; bottom: auto; right: auto;';
+                break;
+            default: // bottom-right
+                $position_styles = 'bottom: 20px; right: 20px; top: auto; left: auto;';
+                break;
+        }
+        
+        // Generate animation styles
+        $animation_styles = '';
+        if ($animation_enabled === '1') {
+            $animation_styles = '
+                transition: all 0.3s ease-in-out;
+                transform-origin: bottom right;
+            ';
+        }
+        
+        // Custom CSS
+        $custom_css = "
+        <style id='baachal-custom-styles'>
+            #chatbot-widget {
+                {$position_styles}
+                width: {$widget_width} !important;
+                {$animation_styles}
+            }
+            
+            #chatbot-widget .chatbot-header {
+                background-color: {$primary_color} !important;
+                border-radius: {$border_radius}px {$border_radius}px 0 0 !important;
+            }
+            
+            #chatbot-widget .chatbot-toggle {
+                background-color: {$primary_color} !important;
+                border-radius: {$border_radius}px !important;
+            }
+            
+            #chatbot-widget .chatbot-toggle:hover {
+                background-color: " . $this->darken_color($primary_color, 10) . " !important;
+            }
+            
+            #chatbot-widget .chatbot-chat-area {
+                height: {$chat_height}px !important;
+                font-size: {$font_size}px !important;
+            }
+            
+            #chatbot-widget .chatbot-container {
+                border-radius: {$border_radius}px !important;
+                border: 2px solid {$primary_color} !important;
+            }
+            
+            #chatbot-widget .user-message {
+                background-color: {$primary_color} !important;
+                border-radius: {$border_radius}px !important;
+            }
+            
+            #chatbot-widget .bot-message {
+                background-color: {$secondary_color} !important;
+                border-radius: {$border_radius}px !important;
+            }
+            
+            #chatbot-widget .chatbot-input input {
+                font-size: {$font_size}px !important;
+                border-radius: " . max(3, $border_radius - 5) . "px !important;
+            }
+            
+            #chatbot-widget .chatbot-send-btn {
+                background-color: {$primary_color} !important;
+                border-radius: " . max(3, $border_radius - 5) . "px !important;
+            }
+            
+            #chatbot-widget .chatbot-send-btn:hover {
+                background-color: " . $this->darken_color($primary_color, 10) . " !important;
+            }
+            
+            #chatbot-widget .chatbot-clear-btn {
+                color: {$primary_color} !important;
+            }
+            
+            #chatbot-widget .chatbot-clear-btn:hover {
+                background-color: " . $this->lighten_color($primary_color, 90) . " !important;
+            }
+            
+            /* Mobile responsiveness */
+            @media (max-width: 768px) {
+                #chatbot-widget {
+                    width: calc(100vw - 40px) !important;
+                    max-width: {$widget_width} !important;
+                }
+                
+                #chatbot-widget .chatbot-chat-area {
+                    height: " . min($chat_height, 350) . "px !important;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                #chatbot-widget {
+                    width: calc(100vw - 20px) !important;
+                    left: 10px !important;
+                    right: 10px !important;
+                    bottom: 10px !important;
+                }
+                
+                #chatbot-widget .chatbot-chat-area {
+                    height: " . min($chat_height, 300) . "px !important;
+                    font-size: " . max(12, $font_size - 1) . "px !important;
+                }
+            }
+        </style>";
+        
+        // Allow other plugins to modify the custom CSS
+        $custom_css = apply_filters('baachal_custom_css', $custom_css, array(
+            'primary_color' => $primary_color,
+            'secondary_color' => $secondary_color,
+            'position' => $position,
+            'size' => $size,
+            'border_radius' => $border_radius,
+            'chat_height' => $chat_height,
+            'font_size' => $font_size,
+            'animation_enabled' => $animation_enabled
+        ));
+        
+        echo $custom_css;
+    }
+    
+    private function darken_color($hex, $percent) {
+        // Remove the hash if present
+        $hex = str_replace('#', '', $hex);
+        
+        // Convert to RGB
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        // Darken
+        $r = max(0, $r - ($r * $percent / 100));
+        $g = max(0, $g - ($g * $percent / 100));
+        $b = max(0, $b - ($b * $percent / 100));
+        
+        // Convert back to hex
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
+    }
+    
+    private function lighten_color($hex, $percent) {
+        // Remove the hash if present
+        $hex = str_replace('#', '', $hex);
+        
+        // Convert to RGB
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        
+        // Lighten
+        $r = min(255, $r + ((255 - $r) * $percent / 100));
+        $g = min(255, $g + ((255 - $g) * $percent / 100));
+        $b = min(255, $b + ((255 - $b) * $percent / 100));
+        
+        // Convert back to hex
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
     }
     
     public function add_chatbot_html() {
@@ -393,6 +586,25 @@ class Baachal {
         }
         
         wp_send_json_success(array());
+    }
+    
+    public function handle_clear_cache_ajax() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'clear_baachal_cache')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        // Check if user has permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        // Clear the cache
+        delete_transient('baachal_dynamic_terms');
+        
+        wp_send_json_success('Cache cleared successfully');
     }
     
     public function clear_chat_history() {
@@ -1294,6 +1506,23 @@ class Baachal {
         register_setting('chatbot_settings', 'chatbot_gemini_model');
         register_setting('chatbot_settings', 'chatbot_woocommerce_integration');
         register_setting('chatbot_settings', 'chatbot_message_persistence');
+        register_setting('chatbot_settings', 'chatbot_show_clear_history');
+        
+        // Product search settings
+        register_setting('chatbot_settings', 'chatbot_max_terms');
+        register_setting('chatbot_settings', 'chatbot_min_term_length');
+        register_setting('chatbot_settings', 'chatbot_cache_duration');
+        register_setting('chatbot_settings', 'chatbot_exclude_terms');
+        
+        // UI styling settings
+        register_setting('chatbot_settings', 'chatbot_primary_color');
+        register_setting('chatbot_settings', 'chatbot_secondary_color');
+        register_setting('chatbot_settings', 'chatbot_position');
+        register_setting('chatbot_settings', 'chatbot_size');
+        register_setting('chatbot_settings', 'chatbot_border_radius');
+        register_setting('chatbot_settings', 'chatbot_chat_height');
+        register_setting('chatbot_settings', 'chatbot_font_size');
+        register_setting('chatbot_settings', 'chatbot_animation_enabled');
     }
     
     public function admin_page() {
