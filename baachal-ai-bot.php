@@ -44,6 +44,9 @@ class Baachal {
             add_action($hook, $callback);
         }
         
+        // Add settings link to plugin page
+        add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'add_settings_link'));
+        
         register_activation_hook(__FILE__, array($this, 'activate_plugin'));
         
         // Clear product cache when products are updated
@@ -140,13 +143,13 @@ class Baachal {
         // Allow other plugins to modify script dependencies
         $js_dependencies = apply_filters('baachal_js_dependencies', array('jquery'));
         $css_dependencies = apply_filters('baachal_css_dependencies', array());
-        
+
         wp_enqueue_script('baachal-js', BAACHAL_PLUGIN_URL . 'assets/chatbot.js', $js_dependencies, BAACHAL_VERSION, true);
         wp_enqueue_style('baachal-css', BAACHAL_PLUGIN_URL . 'assets/chatbot.css', $css_dependencies, BAACHAL_VERSION);
-        
+
         // Add custom styling based on settings
         $this->add_custom_styles();
-        
+
         // Allow other plugins to modify localized data
         $localized_data = apply_filters('baachal_localized_data', array(
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -155,10 +158,10 @@ class Baachal {
             'message_persistence' => get_option('chatbot_message_persistence', '1'),
             'session_id' => $this->get_chat_session_id()
         ));
-        
+
         // Localize script for AJAX
         wp_localize_script('baachal-js', 'chatbot_ajax', $localized_data);
-        
+
         // Allow other plugins to enqueue additional scripts/styles
         do_action('baachal_after_enqueue_scripts');
     }
@@ -211,96 +214,119 @@ class Baachal {
         
         // Custom CSS
         $custom_css = "
-        <style id='baachal-custom-styles'>
-            #chatbot-widget {
+            #ai-chatbot-widget {
                 {$position_styles}
-                width: {$widget_width} !important;
                 {$animation_styles}
             }
             
-            #chatbot-widget .chatbot-header {
-                background-color: {$primary_color} !important;
-                border-radius: {$border_radius}px {$border_radius}px 0 0 !important;
-            }
-            
-            #chatbot-widget .chatbot-toggle {
-                background-color: {$primary_color} !important;
-                border-radius: {$border_radius}px !important;
-            }
-            
-            #chatbot-widget .chatbot-toggle:hover {
-                background-color: " . $this->darken_color($primary_color, 10) . " !important;
-            }
-            
-            #chatbot-widget .chatbot-chat-area {
-                height: {$chat_height}px !important;
-                font-size: {$font_size}px !important;
-            }
-            
-            #chatbot-widget .chatbot-container {
+            #chatbot-container {
+                width: {$widget_width} !important;
                 border-radius: {$border_radius}px !important;
                 border: 2px solid {$primary_color} !important;
             }
             
-            #chatbot-widget .user-message {
+            #chatbot-header {
                 background-color: {$primary_color} !important;
+                border-radius: {$border_radius}px {$border_radius}px 0 0 !important;
+            }
+            
+            #chatbot-toggle {
+                background: {$primary_color} !important;
                 border-radius: {$border_radius}px !important;
             }
             
-            #chatbot-widget .bot-message {
+            #chatbot-toggle:hover {
+                background: " . $this->darken_color($primary_color, 10) . " !important;
+                transform: scale(1.05);
+            }
+            
+            #chatbot-messages {
+                height: {$chat_height}px !important;
+                font-size: {$font_size}px !important;
+            }
+            
+            .user-message {
+                background-color: {$primary_color} !important;
+            }
+            
+            .user-message .message-content {
+                border-radius: {$border_radius}px !important;
+                background-color: {$primary_color} !important;
+                color: white !important;
+            }
+            
+            .bot-message .message-content {
                 background-color: {$secondary_color} !important;
                 border-radius: {$border_radius}px !important;
             }
             
-            #chatbot-widget .chatbot-input input {
+            #chatbot-input {
                 font-size: {$font_size}px !important;
                 border-radius: " . max(3, $border_radius - 5) . "px !important;
             }
             
-            #chatbot-widget .chatbot-send-btn {
+            #chatbot-input:focus {
+                border-color: {$primary_color} !important;
+                box-shadow: 0 0 0 2px " . $this->lighten_color($primary_color, 80) . " !important;
+            }
+            
+            #chatbot-send {
                 background-color: {$primary_color} !important;
                 border-radius: " . max(3, $border_radius - 5) . "px !important;
             }
             
-            #chatbot-widget .chatbot-send-btn:hover {
+            #chatbot-send:hover {
                 background-color: " . $this->darken_color($primary_color, 10) . " !important;
             }
             
-            #chatbot-widget .chatbot-clear-btn {
+            #chatbot-clear {
                 color: {$primary_color} !important;
             }
             
-            #chatbot-widget .chatbot-clear-btn:hover {
+            #chatbot-clear:hover {
+                background-color: " . $this->lighten_color($primary_color, 90) . " !important;
+            }
+            
+            #chatbot-close:hover {
                 background-color: " . $this->lighten_color($primary_color, 90) . " !important;
             }
             
             /* Mobile responsiveness */
             @media (max-width: 768px) {
-                #chatbot-widget {
+                #ai-chatbot-widget {
+                    width: calc(100vw - 40px) !important;
+                    left: 20px !important;
+                    right: 20px !important;
+                }
+                
+                #chatbot-container {
                     width: calc(100vw - 40px) !important;
                     max-width: {$widget_width} !important;
                 }
                 
-                #chatbot-widget .chatbot-chat-area {
+                #chatbot-messages {
                     height: " . min($chat_height, 350) . "px !important;
                 }
             }
             
             @media (max-width: 480px) {
-                #chatbot-widget {
+                #ai-chatbot-widget {
                     width: calc(100vw - 20px) !important;
                     left: 10px !important;
                     right: 10px !important;
                     bottom: 10px !important;
                 }
                 
-                #chatbot-widget .chatbot-chat-area {
+                #chatbot-container {
+                    width: calc(100vw - 20px) !important;
+                }
+                
+                #chatbot-messages {
                     height: " . min($chat_height, 300) . "px !important;
                     font-size: " . max(12, $font_size - 1) . "px !important;
                 }
-            }
-        </style>";
-        
+            }";
+
         // Allow other plugins to modify the custom CSS
         $custom_css = apply_filters('baachal_custom_css', $custom_css, array(
             'primary_color' => $primary_color,
@@ -312,8 +338,9 @@ class Baachal {
             'font_size' => $font_size,
             'animation_enabled' => $animation_enabled
         ));
-        
-        echo $custom_css;
+
+        // Add the custom CSS as inline styles to the main chatbot stylesheet
+        wp_add_inline_style('baachal-css', $custom_css);
     }
     
     private function darken_color($hex, $percent) {
@@ -1429,6 +1456,12 @@ class Baachal {
             'baachal',
             array($this, 'admin_page')
         );
+    }
+    
+    public function add_settings_link($links) {
+        $settings_link = '<a href="' . admin_url('options-general.php?page=baachal') . '">' . __('Settings') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
     }
     
     public function add_chat_meta_boxes() {

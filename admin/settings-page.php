@@ -24,24 +24,50 @@ if (isset($_POST['submit'])) {
     update_option('chatbot_show_clear_history', isset($_POST['chatbot_show_clear_history']) ? '1' : '0');
     
     // Product Search Settings
-    update_option('chatbot_max_terms', intval($_POST['chatbot_max_terms']));
-    update_option('chatbot_min_term_length', intval($_POST['chatbot_min_term_length']));
-    update_option('chatbot_cache_duration', intval($_POST['chatbot_cache_duration']));
+    if (isset($_POST['chatbot_max_terms'])) {
+        update_option('chatbot_max_terms', intval($_POST['chatbot_max_terms']));
+    }
+    if (isset($_POST['chatbot_min_term_length'])) {
+        update_option('chatbot_min_term_length', intval($_POST['chatbot_min_term_length']));
+    }
+    if (isset($_POST['chatbot_cache_duration'])) {
+        update_option('chatbot_cache_duration', intval($_POST['chatbot_cache_duration']));
+    }
     
     // Handle exclude terms as comma-separated values
-    $exclude_terms = sanitize_textarea_field($_POST['chatbot_exclude_terms']);
-    $exclude_terms_array = array_map('trim', explode(',', $exclude_terms));
-    update_option('chatbot_exclude_terms', $exclude_terms_array);
+    if (isset($_POST['chatbot_exclude_terms'])) {
+        $exclude_terms = sanitize_textarea_field($_POST['chatbot_exclude_terms']);
+        $exclude_terms_array = array_map('trim', explode(',', $exclude_terms));
+        update_option('chatbot_exclude_terms', $exclude_terms_array);
+    }
     
     // UI Styling Settings
-    update_option('chatbot_primary_color', sanitize_hex_color($_POST['chatbot_primary_color']));
-    update_option('chatbot_secondary_color', sanitize_hex_color($_POST['chatbot_secondary_color']));
-    update_option('chatbot_position', sanitize_text_field($_POST['chatbot_position']));
-    update_option('chatbot_size', sanitize_text_field($_POST['chatbot_size']));
-    update_option('chatbot_border_radius', intval($_POST['chatbot_border_radius']));
-    update_option('chatbot_chat_height', intval($_POST['chatbot_chat_height']));
-    update_option('chatbot_font_size', intval($_POST['chatbot_font_size']));
-    update_option('chatbot_animation_enabled', isset($_POST['chatbot_animation_enabled']) ? '1' : '0');
+    if (isset($_POST['chatbot_primary_color'])) {
+        update_option('chatbot_primary_color', sanitize_hex_color($_POST['chatbot_primary_color']));
+    }
+    if (isset($_POST['chatbot_secondary_color'])) {
+        update_option('chatbot_secondary_color', sanitize_hex_color($_POST['chatbot_secondary_color']));
+    }
+    if (isset($_POST['chatbot_position'])) {
+        update_option('chatbot_position', sanitize_text_field($_POST['chatbot_position']));
+    }
+    if (isset($_POST['chatbot_size'])) {
+        update_option('chatbot_size', sanitize_text_field($_POST['chatbot_size']));
+    }
+    if (isset($_POST['chatbot_border_radius'])) {
+        update_option('chatbot_border_radius', intval($_POST['chatbot_border_radius']));
+    }
+    if (isset($_POST['chatbot_chat_height'])) {
+        update_option('chatbot_chat_height', intval($_POST['chatbot_chat_height']));
+    }
+    if (isset($_POST['chatbot_font_size'])) {
+        update_option('chatbot_font_size', intval($_POST['chatbot_font_size']));
+    }
+    if (isset($_POST['chatbot_animation_enabled'])) {
+        update_option('chatbot_animation_enabled', '1');
+    } else {
+        update_option('chatbot_animation_enabled', '0');
+    }
     
     // Clear dynamic terms cache when settings change
     delete_transient('baachal_dynamic_terms');
@@ -131,6 +157,14 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
     border-top: none;
 }
 
+.baachal-tab-panel {
+    display: none;
+}
+
+.baachal-tab-panel.active {
+    display: block;
+}
+
 .baachal-color-preview {
     width: 30px;
     height: 30px;
@@ -166,6 +200,47 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching functionality
+    function switchTab(tabId) {
+        // Hide all tab panels
+        document.querySelectorAll('.baachal-tab-panel').forEach(function(panel) {
+            panel.classList.remove('active');
+        });
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.nav-tab').forEach(function(tab) {
+            tab.classList.remove('nav-tab-active');
+        });
+        
+        // Show the selected tab panel
+        const targetPanel = document.getElementById('tab-' + tabId);
+        if (targetPanel) {
+            targetPanel.classList.add('active');
+        }
+        
+        // Add active class to clicked tab
+        const targetTab = document.querySelector('.nav-tab[data-tab="' + tabId + '"]');
+        if (targetTab) {
+            targetTab.classList.add('nav-tab-active');
+        }
+        
+        // Store active tab in localStorage
+        localStorage.setItem('baachal_active_tab', tabId);
+    }
+    
+    // Set up tab click handlers
+    document.querySelectorAll('.nav-tab').forEach(function(tab) {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabId = this.getAttribute('data-tab');
+            switchTab(tabId);
+        });
+    });
+    
+    // Restore active tab from localStorage or use default
+    const savedTab = localStorage.getItem('baachal_active_tab') || 'general';
+    switchTab(savedTab);
+    
     // Update color previews
     function updateColorPreview(input) {
         const preview = input.parentNode.querySelector('.baachal-color-preview');
@@ -203,8 +278,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     <div class="baachal-tabs">
         <?php foreach ($tabs as $tab_id => $tab_name): ?>
-            <a href="?page=baachal&tab=<?php echo esc_attr($tab_id); ?>" 
-               class="nav-tab <?php echo $current_tab === $tab_id ? 'nav-tab-active' : ''; ?>">
+            <a href="#" data-tab="<?php echo esc_attr($tab_id); ?>" 
+               class="nav-tab">
                 <?php echo esc_html($tab_name); ?>
             </a>
         <?php endforeach; ?>
@@ -217,28 +292,31 @@ document.addEventListener('DOMContentLoaded', function() {
             <?php
             // Allow other plugins to add content before tabs
             do_action('baachal_before_settings_tabs', $current_tab);
+            ?>
             
-            switch ($current_tab) {
-                case 'general':
-                    include BAACHAL_PLUGIN_PATH . 'admin/tabs/general.php';
-                    break;
-                case 'woocommerce':
-                    include BAACHAL_PLUGIN_PATH . 'admin/tabs/woocommerce.php';
-                    break;
-                case 'search':
-                    include BAACHAL_PLUGIN_PATH . 'admin/tabs/search.php';
-                    break;
-                case 'styling':
-                    include BAACHAL_PLUGIN_PATH . 'admin/tabs/styling.php';
-                    break;
-                case 'advanced':
-                    include BAACHAL_PLUGIN_PATH . 'admin/tabs/advanced.php';
-                    break;
-                default:
-                    // Allow other plugins to handle custom tabs
-                    do_action('baachal_settings_tab_content', $current_tab);
-                    break;
-            }
+            <div id="tab-general" class="baachal-tab-panel">
+                <?php include BAACHAL_PLUGIN_PATH . 'admin/tabs/general.php'; ?>
+            </div>
+            
+            <div id="tab-woocommerce" class="baachal-tab-panel">
+                <?php include BAACHAL_PLUGIN_PATH . 'admin/tabs/woocommerce.php'; ?>
+            </div>
+            
+            <div id="tab-search" class="baachal-tab-panel">
+                <?php include BAACHAL_PLUGIN_PATH . 'admin/tabs/search.php'; ?>
+            </div>
+            
+            <div id="tab-styling" class="baachal-tab-panel">
+                <?php include BAACHAL_PLUGIN_PATH . 'admin/tabs/styling.php'; ?>
+            </div>
+            
+            <div id="tab-advanced" class="baachal-tab-panel">
+                <?php include BAACHAL_PLUGIN_PATH . 'admin/tabs/advanced.php'; ?>
+            </div>
+            
+            <?php
+            // Allow other plugins to add custom tabs
+            do_action('baachal_settings_tab_content', $current_tab);
             
             // Allow other plugins to add content after tabs
             do_action('baachal_after_settings_tabs', $current_tab);
