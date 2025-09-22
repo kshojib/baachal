@@ -86,16 +86,33 @@ When WooCommerce is active and integration is enabled:
 ## File Structure
 
 ```
-custom-ai-chatbot/
-├── baachal-ai-bot.php             # Main plugin file (Baachal class)
+baachal/
+├── baachal.php                    # Main plugin file with core functionality
+├── uninstall.php                  # Plugin cleanup on uninstall
+├── CHANGELOG.md                   # Version history and updates
+├── DEVELOPER_HOOKS.md             # Developer documentation for hooks
+├── SUBMISSION-CHECKLIST.md        # WordPress.org submission checklist
+├── readme.txt                     # WordPress.org plugin repository format
 ├── admin/
-│   └── settings-page.php          # Admin settings interface
+│   ├── settings-page.php          # Main admin settings interface
+│   └── tabs/
+│       ├── general.php             # General settings tab
+│       ├── woocommerce.php         # WooCommerce integration settings
+│       ├── search.php              # Product search configuration
+│       ├── content.php             # Content indexing settings
+│       ├── styling.php             # UI customization options
+│       └── advanced.php            # Advanced plugin settings
 ├── assets/
-│   ├── chatbot.css                # Baachal styling
-│   └── chatbot.js                 # Baachal functionality
-├── templates/
-│   └── chatbot-widget.php         # Baachal HTML template
-└── README.md                      # This file
+│   ├── chatbot.css                 # Frontend chatbot styles
+│   ├── chatbot.js                  # Frontend chatbot functionality
+│   ├── images/                     # Plugin icons and graphics
+│   └── plugin-assets/              # WordPress.org banner assets
+├── includes/
+│   └── content-indexer.php         # Website content indexing system
+├── languages/
+│   └── baachal.pot                 # Translation template file
+└── templates/
+    └── chatbot-widget.php          # Chatbot HTML widget template
 ```
 
 ## AI Models Supported
