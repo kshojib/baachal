@@ -156,8 +156,6 @@ Yes, the admin interface provides comprehensive statistics about indexed content
 2. **Admin Settings** - Intuitive tabbed interface for easy configuration  
 3. **Content Indexing** - Powerful content management with statistics dashboard
 4. **WooCommerce Integration** - Smart product recommendations with full details
-5. **Mobile Experience** - Responsive design optimized for all devices
-6. **Customization Options** - Extensive styling and positioning controls
 
 == Changelog ==
 

@@ -2,7 +2,7 @@
 
 ## ✅ Required Files & Structure
 
-- [x] **Main plugin file**: `baachal-ai-bot.php` with proper header
+- [x] **Main plugin file**: `baachal.php` with proper header
 - [x] **readme.txt**: WordPress-specific readme file
 - [x] **README.md**: GitHub-style documentation
 - [x] **CHANGELOG.md**: Version history and changes
