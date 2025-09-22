@@ -8,15 +8,6 @@ global $wpdb;
 $indexer = new Baachal_Content_Indexer();
 $stats = $indexer->get_index_stats();
 
-// Handle form submissions
-if (isset($_POST['action'])) {
-    if ($_POST['action'] === 'reindex_content' && wp_verify_nonce($_POST['baachal_content_nonce'], 'baachal_content_action')) {
-        $indexed_count = $indexer->index_all_content();
-        echo '<div class="notice notice-success"><p>' . sprintf(__('Successfully indexed %d items.', 'baachal'), $indexed_count) . '</p></div>';
-        $stats = $indexer->get_index_stats(); // Refresh stats
-    }
-}
-
 // Get all available post types
 $post_types = get_post_types(array('public' => true), 'objects');
 $indexable_types = get_option('baachal_indexable_post_types', array('post', 'page'));
@@ -53,79 +44,73 @@ $indexable_types = get_option('baachal_indexable_post_types', array('post', 'pag
         </div>
     </div>
     
-    <form method="post" action="">
-        <?php wp_nonce_field('baachal_content_action', 'baachal_content_nonce'); ?>
+    <table class="form-table">
+        <tr>
+            <th scope="row">
+                <label for="baachal_content_indexing_enabled"><?php _e('Enable Content Indexing', 'baachal'); ?></label>
+            </th>
+            <td>
+                <label>
+                    <input type="checkbox" id="baachal_content_indexing_enabled" name="baachal_content_indexing_enabled" value="1" <?php checked(get_option('baachal_content_indexing_enabled', '1'), '1'); ?> />
+                    <?php _e('Allow chatbot to search website content (pages, posts, etc.)', 'baachal'); ?>
+                </label>
+                <p class="description"><?php _e('When enabled, the chatbot can answer questions about your website content, not just products.', 'baachal'); ?></p>
+            </td>
+        </tr>
         
-        <table class="form-table">
-            <tr>
-                <th scope="row">
-                    <label for="baachal_content_indexing_enabled"><?php _e('Enable Content Indexing', 'baachal'); ?></label>
-                </th>
-                <td>
-                    <label>
-                        <input type="checkbox" id="baachal_content_indexing_enabled" name="baachal_content_indexing_enabled" value="1" <?php checked(get_option('baachal_content_indexing_enabled', '1'), '1'); ?> />
-                        <?php _e('Allow chatbot to search website content (pages, posts, etc.)', 'baachal'); ?>
-                    </label>
-                    <p class="description"><?php _e('When enabled, the chatbot can answer questions about your website content, not just products.', 'baachal'); ?></p>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row">
-                    <label><?php _e('Content Types to Index', 'baachal'); ?></label>
-                </th>
-                <td>
-                    <fieldset>
-                        <legend class="screen-reader-text"><?php _e('Select content types to index', 'baachal'); ?></legend>
-                        <?php foreach ($post_types as $post_type): ?>
-                            <?php 
-                            // Skip attachment and some system post types
-                            if (in_array($post_type->name, array('attachment', 'revision', 'nav_menu_item'))) continue;
-                            ?>
-                            <label style="display: block; margin-bottom: 5px;">
-                                <input type="checkbox" name="baachal_indexable_post_types[]" value="<?php echo esc_attr($post_type->name); ?>" <?php checked(in_array($post_type->name, $indexable_types)); ?> />
-                                <?php echo esc_html($post_type->label); ?> (<?php echo esc_html($post_type->name); ?>)
-                            </label>
-                        <?php endforeach; ?>
-                        <p class="description"><?php _e('Select which types of content should be indexed for chatbot searches.', 'baachal'); ?></p>
-                    </fieldset>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row">
-                    <label for="baachal_content_max_results"><?php _e('Max Search Results', 'baachal'); ?></label>
-                </th>
-                <td>
-                    <input type="number" id="baachal_content_max_results" name="baachal_content_max_results" value="<?php echo esc_attr(get_option('baachal_content_max_results', '5')); ?>" min="1" max="20" class="small-text" />
-                    <p class="description"><?php _e('Maximum number of content results to consider when answering questions (1-20).', 'baachal'); ?></p>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row">
-                    <label for="baachal_auto_index"><?php _e('Auto Index', 'baachal'); ?></label>
-                </th>
-                <td>
-                    <label>
-                        <input type="checkbox" id="baachal_auto_index" name="baachal_auto_index" value="1" <?php checked(get_option('baachal_auto_index', '1'), '1'); ?> />
-                        <?php _e('Automatically index content when it\'s created or updated', 'baachal'); ?>
-                    </label>
-                    <p class="description"><?php _e('When enabled, new and updated content will be automatically indexed for chatbot searches.', 'baachal'); ?></p>
-                </td>
-            </tr>
-        </table>
+        <tr>
+            <th scope="row">
+                <label><?php _e('Content Types to Index', 'baachal'); ?></label>
+            </th>
+            <td>
+                <fieldset>
+                    <legend class="screen-reader-text"><?php _e('Select content types to index', 'baachal'); ?></legend>
+                    <?php foreach ($post_types as $post_type): ?>
+                        <?php 
+                        // Skip attachment and some system post types
+                        if (in_array($post_type->name, array('attachment', 'revision', 'nav_menu_item'))) continue;
+                        ?>
+                        <label style="display: block; margin-bottom: 5px;">
+                            <input type="checkbox" name="baachal_indexable_post_types[]" value="<?php echo esc_attr($post_type->name); ?>" <?php checked(in_array($post_type->name, $indexable_types)); ?> />
+                            <?php echo esc_html($post_type->label); ?> (<?php echo esc_html($post_type->name); ?>)
+                        </label>
+                    <?php endforeach; ?>
+                    <p class="description"><?php _e('Select which types of content should be indexed for chatbot searches.', 'baachal'); ?></p>
+                </fieldset>
+            </td>
+        </tr>
         
-        <h4><?php _e('Manual Actions', 'baachal'); ?></h4>
-        <p style="margin-bottom: 15px;">
-            <button type="submit" name="action" value="reindex_content" class="button button-secondary" onclick="return confirm('<?php esc_attr_e('This will reindex all content. Continue?', 'baachal'); ?>')">
-                <?php _e('Reindex All Content', 'baachal'); ?>
-            </button>
-            <span class="description" style="margin-left: 10px;"><?php _e('This will clear the current index and rebuild it from scratch.', 'baachal'); ?></span>
-        </p>
+        <tr>
+            <th scope="row">
+                <label for="baachal_content_max_results"><?php _e('Max Search Results', 'baachal'); ?></label>
+            </th>
+            <td>
+                <input type="number" id="baachal_content_max_results" name="baachal_content_max_results" value="<?php echo esc_attr(get_option('baachal_content_max_results', '5')); ?>" min="1" max="20" class="small-text" />
+                <p class="description"><?php _e('Maximum number of content results to consider when answering questions (1-20).', 'baachal'); ?></p>
+            </td>
+        </tr>
         
-        <?php submit_button(__('Save Content Settings', 'baachal')); ?>
-    </form>
+        <tr>
+            <th scope="row">
+                <label for="baachal_auto_index"><?php _e('Auto Index', 'baachal'); ?></label>
+            </th>
+            <td>
+                <label>
+                    <input type="checkbox" id="baachal_auto_index" name="baachal_auto_index" value="1" <?php checked(get_option('baachal_auto_index', '1'), '1'); ?> />
+                    <?php _e('Automatically index content when it\'s created or updated', 'baachal'); ?>
+                </label>
+                <p class="description"><?php _e('When enabled, new and updated content will be automatically indexed for chatbot searches.', 'baachal'); ?></p>
+            </td>
+        </tr>
+    </table>
+    
+    <h4><?php _e('Manual Actions', 'baachal'); ?></h4>
+    <p style="margin-bottom: 15px;">
+        <button type="button" id="reindex-content-btn" class="button button-secondary">
+            <?php _e('Reindex All Content', 'baachal'); ?>
+        </button>
+        <span class="description" style="margin-left: 10px;"><?php _e('This will clear the current index and rebuild it from scratch.', 'baachal'); ?></span>
+    </p>
     
     <!-- Content Search Test -->
     <div class="baachal-test-section" style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
@@ -140,6 +125,38 @@ $indexable_types = get_option('baachal_indexable_post_types', array('post', 'pag
         
         <script>
         jQuery(document).ready(function($) {
+            // Handle reindex button
+            $('#reindex-content-btn').click(function() {
+                if (confirm('<?php esc_attr_e('This will reindex all content. Continue?', 'baachal'); ?>')) {
+                    var button = $(this);
+                    button.prop('disabled', true).text('<?php esc_attr_e('Indexing...', 'baachal'); ?>');
+                    
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'baachal_reindex_content',
+                            nonce: '<?php echo wp_create_nonce('baachal_reindex_content'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                alert('Successfully indexed ' + response.data.count + ' items.');
+                                location.reload(); // Refresh to update stats
+                            } else {
+                                alert('Error: ' + response.data);
+                            }
+                        },
+                        error: function() {
+                            alert('Ajax error occurred.');
+                        },
+                        complete: function() {
+                            button.prop('disabled', false).text('<?php esc_attr_e('Reindex All Content', 'baachal'); ?>');
+                        }
+                    });
+                }
+            });
+            
+            // Handle test search
             $('#test-search-btn').click(function() {
                 var query = $('#test-query').val();
                 if (!query) return;

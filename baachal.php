@@ -59,6 +59,7 @@ class Baachal {
             'wp_ajax_nopriv_clear_chat_history' => array($this, 'clear_chat_history'),
             'wp_ajax_clear_baachal_cache' => array($this, 'handle_clear_cache_ajax'),
             'wp_ajax_baachal_test_content_search' => array($this, 'handle_test_content_search'),
+            'wp_ajax_baachal_reindex_content' => array($this, 'handle_reindex_content_ajax'),
             'admin_menu' => array($this, 'add_admin_menu'),
             'admin_init' => array($this, 'register_settings'),
             'add_meta_boxes' => array($this, 'add_chat_meta_boxes')
@@ -648,6 +649,26 @@ class Baachal {
         $results = $indexer->search_content($query, 10);
         
         wp_send_json_success(array('results' => $results));
+    }
+    
+    public function handle_reindex_content_ajax() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'baachal_reindex_content')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        // Check if user has permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        // Get content indexer instance and reindex
+        $indexer = new Baachal_Content_Indexer();
+        $indexed_count = $indexer->index_all_content();
+        
+        wp_send_json_success(array('count' => $indexed_count));
     }
     
     public function clear_chat_history() {
