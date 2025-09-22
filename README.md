@@ -1,8 +1,8 @@
 # Baachal AI Chatbot - WordPress Plugin
 
-[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/baachal-ai-chatbot.svg)](https://wordpress.org/plugins/baachal/)
-[![WordPress Plugin Downloads](https://img.shields.io/wordpress/plugin/dt/baachal-ai-chatbot.svg)](https://wordpress.org/plugins/baachal/)
-[![WordPress Plugin Rating](https://img.shields.io/wordpress/plugin/stars/baachal-ai-chatbot.svg)](https://wordpress.org/plugins/baachal/)
+[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/baachal.svg)](https://wordpress.org/plugins/baachal/)
+[![WordPress Plugin Downloads](https://img.shields.io/wordpress/plugin/dt/baachal.svg)](https://wordpress.org/plugins/baachal/)
+[![WordPress Plugin Rating](https://img.shields.io/wordpress/plugin/stars/baachal.svg)](https://wordpress.org/plugins/baachal/)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
 ## Overview
@@ -22,7 +22,7 @@ Transform your WordPress website with an intelligent AI chatbot powered by Googl
 
 ## Installation
 
-1. Upload the `custom-ai-chatbot` folder to your `/wp-content/plugins/` directory
+1. Upload the `baachal` folder to your `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Go to **Settings > Baachal AI bot** to configure the plugin
 
