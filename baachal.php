@@ -164,9 +164,9 @@ class Baachal {
         }
         
         // Check if we should preserve data
-        $preserve_data = get_option('baachal_preserve_data_on_uninstall', false);
+        $preserve_data = get_option('baachal_preserve_data_on_uninstall', '1');
         
-        if (!$preserve_data) {
+        if ($preserve_data !== '1') {
             global $wpdb;
             
             // Delete all plugin options
@@ -220,7 +220,7 @@ class Baachal {
             'baachal_auto_index' => '1',
             'baachal_content_max_results' => '5',
             'baachal_indexable_post_types' => array('post', 'page'),
-            'baachal_preserve_data_on_uninstall' => false
+            'baachal_preserve_data_on_uninstall' => '1'
         );
         
         foreach ($defaults as $option => $value) {
