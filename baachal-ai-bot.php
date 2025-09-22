@@ -1,11 +1,25 @@
 <?php
 /**
- * Plugin Name: Baachal AI bot
- * Description: A simple AI chatbot using Gemini API with website knowledge
+ * Plugin Name: Baachal AI Chatbot
+ * Plugin URI: https://github.com/kshojib/baachal
+ * Description: Intelligent AI chatbot powered by Google Gemini API. Provides customer support with deep knowledge of your website content, products, and services. Features automatic content indexing, customizable styling, and seamless WooCommerce integration.
  * Version: 1.0.0
+ * Requires at least: 5.0
+ * Tested up to: 6.4
+ * Requires PHP: 7.4
  * Author: Shojib Khan
  * Author URI: https://www.shojibkhan.com
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: baachal
+ * Domain Path: /languages
+ * Network: false
+ * WC requires at least: 3.0
+ * WC tested up to: 8.0
+ * 
+ * @package Baachal
+ * @author Shojib Khan
+ * @since 1.0.0
  */
 
 // Prevent direct access
@@ -20,6 +34,13 @@ define('BAACHAL_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
 // Include required files
 require_once BAACHAL_PLUGIN_PATH . 'includes/content-indexer.php';
+
+// Declare WooCommerce HPOS compatibility
+add_action('before_woocommerce_init', function() {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+    }
+});
 
 // Main plugin class
 class Baachal {
@@ -52,6 +73,8 @@ class Baachal {
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this, 'add_settings_link'));
         
         register_activation_hook(__FILE__, array($this, 'activate_plugin'));
+        register_deactivation_hook(__FILE__, array($this, 'deactivate_plugin'));
+        register_uninstall_hook(__FILE__, array('Baachal', 'uninstall_plugin'));
         
         // Clear product cache when products are updated
         add_action('save_post', array($this, 'clear_product_cache_on_update'));
@@ -91,6 +114,9 @@ class Baachal {
     }
     
     public function init() {
+        // Load text domain for translations
+        load_plugin_textdomain('baachal', false, dirname(plugin_basename(__FILE__)) . '/languages');
+        
         // Allow other plugins to perform actions before initialization
         do_action('baachal_before_init');
         
@@ -105,8 +131,113 @@ class Baachal {
         // Register post type
         $this->register_chat_post_type();
         
+        // Create content index table
+        $indexer = new Baachal_Content_Indexer();
+        $indexer->create_index_table();
+        
+        // Set default options
+        $this->set_default_options();
+        
         // Flush rewrite rules
         flush_rewrite_rules();
+        
+        // Allow other plugins to perform activation tasks
+        do_action('baachal_plugin_activated');
+    }
+    
+    public function deactivate_plugin() {
+        // Clear all transients
+        $this->clear_all_transients();
+        
+        // Flush rewrite rules
+        flush_rewrite_rules();
+        
+        // Allow other plugins to perform deactivation tasks
+        do_action('baachal_plugin_deactivated');
+    }
+    
+    public static function uninstall_plugin() {
+        // Only proceed if user has proper permissions
+        if (!current_user_can('activate_plugins')) {
+            return;
+        }
+        
+        // Check if we should preserve data
+        $preserve_data = get_option('baachal_preserve_data_on_uninstall', false);
+        
+        if (!$preserve_data) {
+            global $wpdb;
+            
+            // Delete all plugin options
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'baachal_%' OR option_name LIKE 'chatbot_%'");
+            
+            // Delete content index table
+            $index_table = $wpdb->prefix . 'baachal_content_index';
+            $wpdb->query("DROP TABLE IF EXISTS {$index_table}");
+            
+            // Delete all conversations
+            $conversations = get_posts(array(
+                'post_type' => 'chatbot_conversation',
+                'numberposts' => -1,
+                'post_status' => 'any'
+            ));
+            
+            foreach ($conversations as $conversation) {
+                wp_delete_post($conversation->ID, true);
+            }
+            
+            // Clear all transients
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_baachal_%' OR option_name LIKE '_transient_timeout_baachal_%'");
+            
+            // Allow other plugins to perform cleanup
+            do_action('baachal_plugin_uninstalled');
+        }
+    }
+    
+    private function set_default_options() {
+        // Set default options if they don't exist
+        $defaults = array(
+            'chatbot_enabled' => '1',
+            'chatbot_welcome_message' => 'Hello! How can I help you today?',
+            'chatbot_title' => 'Baachal AI Bot',
+            'chatbot_gemini_model' => 'gemini-2.0-flash-exp',
+            'chatbot_position' => 'bottom-right',
+            'chatbot_size' => 'medium',
+            'chatbot_primary_color' => '#007cba',
+            'chatbot_secondary_color' => '#f0f0f1',
+            'chatbot_border_radius' => '12',
+            'chatbot_chat_height' => '400',
+            'chatbot_font_size' => '14',
+            'chatbot_animation_enabled' => '1',
+            'chatbot_woocommerce_integration' => '1',
+            'chatbot_message_persistence' => '1',
+            'chatbot_show_clear_history' => '1',
+            'chatbot_max_terms' => '50',
+            'chatbot_min_term_length' => '3',
+            'chatbot_cache_duration' => DAY_IN_SECONDS,
+            'baachal_content_indexing_enabled' => '1',
+            'baachal_auto_index' => '1',
+            'baachal_content_max_results' => '5',
+            'baachal_indexable_post_types' => array('post', 'page'),
+            'baachal_preserve_data_on_uninstall' => false
+        );
+        
+        foreach ($defaults as $option => $value) {
+            if (get_option($option) === false) {
+                update_option($option, $value);
+            }
+        }
+    }
+    
+    private function clear_all_transients() {
+        global $wpdb;
+        
+        // Clear all Baachal-related transients
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_baachal_%'");
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_baachal_%'");
+        
+        // Clear dynamic terms cache
+        delete_transient('baachal_dynamic_terms');
     }
     
     public function register_chat_post_type() {

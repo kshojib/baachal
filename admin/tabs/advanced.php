@@ -18,6 +18,15 @@ if (!defined('ABSPATH')) {
             <p class="description">Enable to see detailed error messages in browser console (for troubleshooting)</p>
         </td>
     </tr>
+    <tr>
+        <th scope="row">
+            <label for="baachal_preserve_data_on_uninstall">Preserve Data on Uninstall</label>
+        </th>
+        <td>
+            <input type="checkbox" id="baachal_preserve_data_on_uninstall" name="baachal_preserve_data_on_uninstall" value="1" <?php checked(get_option('baachal_preserve_data_on_uninstall', false), '1'); ?> />
+            <p class="description">Keep all plugin data (settings, conversations, indexed content) when uninstalling the plugin</p>
+        </td>
+    </tr>
 </table>
 
 <h3>Plugin Information</h3>

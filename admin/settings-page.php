@@ -73,6 +73,7 @@ if (isset($_POST['submit'])) {
     // Content Indexing Settings
     update_option('baachal_content_indexing_enabled', isset($_POST['baachal_content_indexing_enabled']) ? '1' : '0');
     update_option('baachal_auto_index', isset($_POST['baachal_auto_index']) ? '1' : '0');
+    update_option('baachal_preserve_data_on_uninstall', isset($_POST['baachal_preserve_data_on_uninstall']) ? '1' : '0');
     
     if (isset($_POST['baachal_indexable_post_types']) && is_array($_POST['baachal_indexable_post_types'])) {
         $indexable_types = array_map('sanitize_text_field', $_POST['baachal_indexable_post_types']);

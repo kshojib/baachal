@@ -1,19 +1,24 @@
-# Baachal AI bot
+# Baachal AI Chatbot - WordPress Plugin
 
-A simple and clean WordPress AI chatbot plugin that uses Google's Gemini API to provide intelligent responses with website context awareness and WooCommerce integration.
+[![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/baachal-ai-chatbot.svg)](https://wordpress.org/plugins/baachal-ai-chatbot/)
+[![WordPress Plugin Downloads](https://img.shields.io/wordpress/plugin/dt/baachal-ai-chatbot.svg)](https://wordpress.org/plugins/baachal-ai-chatbot/)
+[![WordPress Plugin Rating](https://img.shields.io/wordpress/plugin/stars/baachal-ai-chatbot.svg)](https://wordpress.org/plugins/baachal-ai-chatbot/)
+[![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 
-## Features
+## Overview
 
-- ✅ **Clean, Simple Interface** - Positioned in the bottom-right corner
-- ✅ **Google Gemini AI Integration** - Powered by Google's advanced AI models
-- ✅ **Website Context Awareness** - Knows about your website content
-- ✅ **WooCommerce Integration** - Product-aware responses with clickable links
-- ✅ **Message Persistence** - Chat history saved in database
-- ✅ **Admin Conversation Viewer** - View all chat conversations in WordPress admin
-- ✅ **Model Selection** - Choose from multiple Gemini AI models
-- ✅ **Easy Configuration** - Simple admin settings page
-- ✅ **Responsive Design** - Works on all devices
-- ✅ **Secure** - Includes proper nonce verification and data sanitization
+Transform your WordPress website with an intelligent AI chatbot powered by Google Gemini. Baachal AI Chatbot provides instant, accurate responses about your products, services, and content through advanced artificial intelligence.
+
+## 🚀 Key Features
+
+- **🧠 Intelligent AI**: Powered by Google Gemini for natural conversations
+- **📚 Content Awareness**: Automatically indexes your entire website
+- **🛒 WooCommerce Integration**: Deep product knowledge and recommendations
+- **🎨 Customizable Design**: Match your brand with custom colors and styling
+- **📱 Mobile Responsive**: Perfect experience on all devices
+- **⚡ Performance Optimized**: Fast loading with intelligent caching
+- **🔒 Secure & Private**: GDPR compliant with local data control
+- **🌍 Translation Ready**: Multilingual support included
 
 ## Installation
 
