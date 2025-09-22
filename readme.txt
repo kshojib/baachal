@@ -187,7 +187,7 @@ Initial release of Baachal AI Chatbot. Transform your website with intelligent A
 
 For support, feature requests, or bug reports, please visit:
 
-* [Plugin Support Forum](https://wordpress.org/support/plugin/baachal-ai-chatbot/)
+* [Plugin Support Forum](https://wordpress.org/support/plugin/baachal/)
 * [GitHub Repository](https://github.com/kshojib/baachal)
 * [Developer Website](https://www.shojibkhan.com)
 
