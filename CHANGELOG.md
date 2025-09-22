@@ -104,4 +104,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-For detailed information about each release, visit the [plugin page](https://wordpress.org/plugins/baachal-ai-chatbot/) or check the [GitHub repository](https://github.com/kshojib/baachal).
+For detailed information about each release, visit the [plugin page](https://wordpress.org/plugins/baachal/) or check the [GitHub repository](https://github.com/kshojib/baachal).
