@@ -47,9 +47,17 @@ jQuery(document).ready(function($) {
         // Trigger custom event before opening
         $(document).trigger('baachal_before_open', {widget: $('#ai-chatbot-widget')});
         
-        $('#chatbot-container').fadeIn(300);
+        $('#chatbot-container').removeClass('chatbot-hidden').fadeIn(300);
         isOpen = true;
         $('#chatbot-input').focus();
+        
+        // Add class to show close icon
+        $('#ai-chatbot-widget').addClass('chatbot-open');
+        
+        // Scroll to bottom when opening (in case there are messages)
+        setTimeout(function() {
+            scrollToBottom();
+        }, 350); // After fade-in animation completes
         
         // Trigger custom event after opening
         $(document).trigger('baachal_after_open', {widget: $('#ai-chatbot-widget')});
@@ -59,12 +67,19 @@ jQuery(document).ready(function($) {
         // Trigger custom event before closing
         $(document).trigger('baachal_before_close', {widget: $('#ai-chatbot-widget')});
         
-        $('#chatbot-container').fadeOut(300);
+        $('#chatbot-container').fadeOut(300, function() {
+            $(this).addClass('chatbot-hidden');
+        });
         isOpen = false;
+        
+        // Remove class to show chat icon
+        $('#ai-chatbot-widget').removeClass('chatbot-open');
         
         // Trigger custom event after closing
         $(document).trigger('baachal_after_close', {widget: $('#ai-chatbot-widget')});
-    }    function sendMessage() {
+    }
+    
+    function sendMessage() {
         if (isLoading) return;
         
         const message = $('#chatbot-input').val().trim();
@@ -248,20 +263,23 @@ jQuery(document).ready(function($) {
     
     function showLoading() {
         isLoading = true;
-        $('#chatbot-loading').show();
+        $('#chatbot-loading').removeClass('chatbot-hidden');
         $('#chatbot-send').prop('disabled', true);
         scrollToBottom();
     }
     
     function hideLoading() {
         isLoading = false;
-        $('#chatbot-loading').hide();
+        $('#chatbot-loading').addClass('chatbot-hidden');
         $('#chatbot-send').prop('disabled', false);
     }
     
     function scrollToBottom() {
-        const messagesContainer = $('#chatbot-messages');
-        messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+        const messagesContainer = $('#chatbot-messages')[0];
+        messagesContainer.scrollTo({
+            top: messagesContainer.scrollHeight,
+            behavior: 'smooth'
+        });
     }
     
     function escapeHtml(text) {
@@ -275,17 +293,17 @@ jQuery(document).ready(function($) {
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
     
-    // Close chatbot when clicking outside
-    $(document).on('click', function(e) {
-        if (isOpen && !$(e.target).closest('#ai-chatbot-widget').length) {
-            closeChatbot();
-        }
-    });
+    // Close chatbot when clicking outside - DISABLED
+    // $(document).on('click', function(e) {
+    //     if (isOpen && !$(e.target).closest('#ai-chatbot-widget').length) {
+    //         closeChatbot();
+    //     }
+    // });
     
-    // Prevent closing when clicking inside the chatbot
-    $('#ai-chatbot-widget').on('click', function(e) {
-        e.stopPropagation();
-    });
+    // Prevent closing when clicking inside the chatbot - NO LONGER NEEDED
+    // $('#ai-chatbot-widget').on('click', function(e) {
+    //     e.stopPropagation();
+    // });
     
     // Auto-resize input area
     $('#chatbot-input').on('input', function() {
@@ -316,6 +334,11 @@ jQuery(document).ready(function($) {
                     response.data.forEach(function(message) {
                         addMessage(message.message, message.type, false); // false = don't save again
                     });
+                    
+                    // Scroll to bottom after loading messages
+                    setTimeout(function() {
+                        scrollToBottom();
+                    }, 100); // Small delay to ensure DOM is updated
                 }
             },
             error: function(xhr, status, error) {

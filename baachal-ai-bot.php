@@ -156,7 +156,8 @@ class Baachal {
             'nonce' => wp_create_nonce('chatbot_nonce'),
             'debug_mode' => get_option('chatbot_debug_mode', '0'),
             'message_persistence' => get_option('chatbot_message_persistence', '1'),
-            'session_id' => $this->get_chat_session_id()
+            'session_id' => $this->get_chat_session_id(),
+            'plugin_url' => BAACHAL_PLUGIN_URL
         ));
 
         // Localize script for AJAX
@@ -170,173 +171,27 @@ class Baachal {
         // Get styling options
         $primary_color = get_option('chatbot_primary_color', '#007cba');
         $secondary_color = get_option('chatbot_secondary_color', '#f1f1f1');
-        $position = get_option('chatbot_position', 'bottom-right');
-        $size = get_option('chatbot_size', 'medium');
         $border_radius = get_option('chatbot_border_radius', 15);
         $chat_height = get_option('chatbot_chat_height', 400);
         $font_size = get_option('chatbot_font_size', 14);
-        $animation_enabled = get_option('chatbot_animation_enabled', '1');
         
-        // Generate size-based width
-        $width_map = array(
-            'small' => '300px',
-            'medium' => '350px',
-            'large' => '400px',
-            'extra-large' => '450px'
-        );
-        $widget_width = isset($width_map[$size]) ? $width_map[$size] : $width_map['medium'];
-        
-        // Generate position styles
-        $position_styles = '';
-        switch ($position) {
-            case 'bottom-left':
-                $position_styles = 'bottom: 20px; left: 20px; right: auto; top: auto;';
-                break;
-            case 'top-right':
-                $position_styles = 'top: 20px; right: 20px; bottom: auto; left: auto;';
-                break;
-            case 'top-left':
-                $position_styles = 'top: 20px; left: 20px; bottom: auto; right: auto;';
-                break;
-            default: // bottom-right
-                $position_styles = 'bottom: 20px; right: 20px; top: auto; left: auto;';
-                break;
-        }
-        
-        // Generate animation styles
-        $animation_styles = '';
-        if ($animation_enabled === '1') {
-            $animation_styles = '
-                transition: all 0.3s ease-in-out;
-                transform-origin: bottom right;
-            ';
-        }
-        
-        // Custom CSS
+        // Custom CSS using CSS custom properties
         $custom_css = "
-            #ai-chatbot-widget {
-                {$position_styles}
-                {$animation_styles}
-            }
-            
-            #chatbot-container {
-                width: {$widget_width} !important;
-                border-radius: {$border_radius}px !important;
-                border: 2px solid {$primary_color} !important;
-            }
-            
-            #chatbot-header {
-                background-color: {$primary_color} !important;
-                border-radius: {$border_radius}px {$border_radius}px 0 0 !important;
-            }
-            
-            #chatbot-toggle {
-                background: {$primary_color} !important;
-                border-radius: {$border_radius}px !important;
-            }
-            
-            #chatbot-toggle:hover {
-                background: " . $this->darken_color($primary_color, 10) . " !important;
-                transform: scale(1.05);
-            }
-            
-            #chatbot-messages {
-                height: {$chat_height}px !important;
-                font-size: {$font_size}px !important;
-            }
-            
-            .user-message {
-                background-color: {$primary_color} !important;
-            }
-            
-            .user-message .message-content {
-                border-radius: {$border_radius}px !important;
-                background-color: {$primary_color} !important;
-                color: white !important;
-            }
-            
-            .bot-message .message-content {
-                background-color: {$secondary_color} !important;
-                border-radius: {$border_radius}px !important;
-            }
-            
-            #chatbot-input {
-                font-size: {$font_size}px !important;
-                border-radius: " . max(3, $border_radius - 5) . "px !important;
-            }
-            
-            #chatbot-input:focus {
-                border-color: {$primary_color} !important;
-                box-shadow: 0 0 0 2px " . $this->lighten_color($primary_color, 80) . " !important;
-            }
-            
-            #chatbot-send {
-                background-color: {$primary_color} !important;
-                border-radius: " . max(3, $border_radius - 5) . "px !important;
-            }
-            
-            #chatbot-send:hover {
-                background-color: " . $this->darken_color($primary_color, 10) . " !important;
-            }
-            
-            #chatbot-clear {
-                color: {$primary_color} !important;
-            }
-            
-            #chatbot-clear:hover {
-                background-color: " . $this->lighten_color($primary_color, 90) . " !important;
-            }
-            
-            #chatbot-close:hover {
-                background-color: " . $this->lighten_color($primary_color, 90) . " !important;
-            }
-            
-            /* Mobile responsiveness */
-            @media (max-width: 768px) {
-                #ai-chatbot-widget {
-                    width: calc(100vw - 40px) !important;
-                    left: 20px !important;
-                    right: 20px !important;
-                }
-                
-                #chatbot-container {
-                    width: calc(100vw - 40px) !important;
-                    max-width: {$widget_width} !important;
-                }
-                
-                #chatbot-messages {
-                    height: " . min($chat_height, 350) . "px !important;
-                }
-            }
-            
-            @media (max-width: 480px) {
-                #ai-chatbot-widget {
-                    width: calc(100vw - 20px) !important;
-                    left: 10px !important;
-                    right: 10px !important;
-                    bottom: 10px !important;
-                }
-                
-                #chatbot-container {
-                    width: calc(100vw - 20px) !important;
-                }
-                
-                #chatbot-messages {
-                    height: " . min($chat_height, 300) . "px !important;
-                    font-size: " . max(12, $font_size - 1) . "px !important;
-                }
+            :root {
+                --chatbot-primary-color: {$primary_color};
+                --chatbot-secondary-color: {$secondary_color};
+                --chatbot-border-radius: {$border_radius}px;
+                --chatbot-font-size: {$font_size}px;
+                --chatbot-chat-height: {$chat_height}px;
             }";
 
         // Allow other plugins to modify the custom CSS
         $custom_css = apply_filters('baachal_custom_css', $custom_css, array(
             'primary_color' => $primary_color,
             'secondary_color' => $secondary_color,
-            'position' => $position,
-            'size' => $size,
             'border_radius' => $border_radius,
             'chat_height' => $chat_height,
-            'font_size' => $font_size,
-            'animation_enabled' => $animation_enabled
+            'font_size' => $font_size
         ));
 
         // Add the custom CSS as inline styles to the main chatbot stylesheet

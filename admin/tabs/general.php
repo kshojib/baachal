@@ -46,6 +46,16 @@ if (!defined('ABSPATH')) {
     
     <tr>
         <th scope="row">
+            <label for="chatbot_title">Chatbot Title</label>
+        </th>
+        <td>
+            <input type="text" id="chatbot_title" name="chatbot_title" value="<?php echo esc_attr($chatbot_title); ?>" class="regular-text" />
+            <p class="description">The title displayed in the chatbot header</p>
+        </td>
+    </tr>
+    
+    <tr>
+        <th scope="row">
             <label for="chatbot_welcome_message">Welcome Message</label>
         </th>
         <td>

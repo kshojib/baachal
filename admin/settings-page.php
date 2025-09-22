@@ -14,6 +14,7 @@ if (isset($_POST['submit'])) {
     // General Settings
     update_option('chatbot_gemini_api_key', sanitize_text_field($_POST['chatbot_gemini_api_key']));
     update_option('chatbot_enabled', isset($_POST['chatbot_enabled']) ? '1' : '0');
+    update_option('chatbot_title', sanitize_text_field($_POST['chatbot_title']));
     update_option('chatbot_welcome_message', sanitize_textarea_field($_POST['chatbot_welcome_message']));
     update_option('chatbot_gemini_model', sanitize_text_field($_POST['chatbot_gemini_model']));
     update_option('chatbot_debug_mode', isset($_POST['chatbot_debug_mode']) ? '1' : '0');
@@ -81,6 +82,7 @@ if (isset($_POST['submit'])) {
 // Get current values
 $api_key = get_option('chatbot_gemini_api_key', '');
 $enabled = get_option('chatbot_enabled', '1');
+$chatbot_title = get_option('chatbot_title', 'AI Chat Bot');
 $welcome_message = get_option('chatbot_welcome_message', 'Hello! How can I help you today?');
 $debug_mode = get_option('chatbot_debug_mode', '0');
 $gemini_model = get_option('chatbot_gemini_model', 'gemini-2.0-flash-exp');
