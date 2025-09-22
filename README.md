@@ -22,7 +22,7 @@ Transform your WordPress website with an intelligent AI chatbot powered by Googl
 
 ## Installation
 
-1. Upload the `baachal-ai-chatbot` folder to your `/wp-content/plugins/` directory
+1. Upload the `baachal` folder to your `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Go to **Settings > Baachal AI bot** to configure the plugin
 
@@ -89,10 +89,10 @@ When WooCommerce is active and integration is enabled:
 baachal/
 ├── baachal.php                    # Main plugin file with core functionality
 ├── uninstall.php                  # Plugin cleanup on uninstall
+├── README.md                      # Project documentation (GitHub)
+├── readme.txt                     # WordPress.org plugin repository format
 ├── CHANGELOG.md                   # Version history and updates
 ├── DEVELOPER_HOOKS.md             # Developer documentation for hooks
-├── SUBMISSION-CHECKLIST.md        # WordPress.org submission checklist
-├── readme.txt                     # WordPress.org plugin repository format
 ├── admin/
 │   ├── settings-page.php          # Main admin settings interface
 │   └── tabs/

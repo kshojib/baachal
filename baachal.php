@@ -5,7 +5,7 @@
  * Description: Intelligent AI chatbot powered by Google Gemini API. Provides customer support with deep knowledge of your website content, products, and services. Features automatic content indexing, customizable styling, and seamless WooCommerce integration.
  * Version: 1.0.0
  * Requires at least: 5.0
- * Tested up to: 6.4
+ * Tested up to: 6.8
  * Requires PHP: 7.4
  * Author: Shojib Khan
  * Author URI: https://www.shojibkhan.com
@@ -13,7 +13,6 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: baachal
  * Domain Path: /languages
- * Network: false
  * WC requires at least: 3.0
  * WC tested up to: 8.0
  * 
@@ -115,9 +114,6 @@ class Baachal {
     }
     
     public function init() {
-        // Load text domain for translations
-        load_plugin_textdomain('baachal', false, dirname(plugin_basename(__FILE__)) . '/languages');
-        
         // Allow other plugins to perform actions before initialization
         do_action('baachal_before_init');
         
@@ -1699,30 +1695,77 @@ class Baachal {
     }
     
     public function register_settings() {
-        register_setting('chatbot_settings', 'chatbot_gemini_api_key');
-        register_setting('chatbot_settings', 'chatbot_enabled');
-        register_setting('chatbot_settings', 'chatbot_welcome_message');
-        register_setting('chatbot_settings', 'chatbot_debug_mode');
-        register_setting('chatbot_settings', 'chatbot_gemini_model');
-        register_setting('chatbot_settings', 'chatbot_woocommerce_integration');
-        register_setting('chatbot_settings', 'chatbot_message_persistence');
-        register_setting('chatbot_settings', 'chatbot_show_clear_history');
+        register_setting('chatbot_settings', 'chatbot_gemini_api_key', array(
+            'sanitize_callback' => 'sanitize_text_field'
+        ));
+        register_setting('chatbot_settings', 'chatbot_enabled', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
+        register_setting('chatbot_settings', 'chatbot_welcome_message', array(
+            'sanitize_callback' => 'sanitize_textarea_field'
+        ));
+        register_setting('chatbot_settings', 'chatbot_debug_mode', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
+        register_setting('chatbot_settings', 'chatbot_gemini_model', array(
+            'sanitize_callback' => 'sanitize_text_field'
+        ));
+        register_setting('chatbot_settings', 'chatbot_woocommerce_integration', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
+        register_setting('chatbot_settings', 'chatbot_message_persistence', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
+        register_setting('chatbot_settings', 'chatbot_show_clear_history', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
         
         // Product search settings
-        register_setting('chatbot_settings', 'chatbot_max_terms');
-        register_setting('chatbot_settings', 'chatbot_min_term_length');
-        register_setting('chatbot_settings', 'chatbot_cache_duration');
-        register_setting('chatbot_settings', 'chatbot_exclude_terms');
+        register_setting('chatbot_settings', 'chatbot_max_terms', array(
+            'sanitize_callback' => 'absint'
+        ));
+        register_setting('chatbot_settings', 'chatbot_min_term_length', array(
+            'sanitize_callback' => 'absint'
+        ));
+        register_setting('chatbot_settings', 'chatbot_cache_duration', array(
+            'sanitize_callback' => 'absint'
+        ));
+        register_setting('chatbot_settings', 'chatbot_exclude_terms', array(
+            'sanitize_callback' => 'sanitize_textarea_field'
+        ));
         
         // UI styling settings
-        register_setting('chatbot_settings', 'chatbot_primary_color');
-        register_setting('chatbot_settings', 'chatbot_secondary_color');
-        register_setting('chatbot_settings', 'chatbot_position');
-        register_setting('chatbot_settings', 'chatbot_size');
-        register_setting('chatbot_settings', 'chatbot_border_radius');
-        register_setting('chatbot_settings', 'chatbot_chat_height');
-        register_setting('chatbot_settings', 'chatbot_font_size');
-        register_setting('chatbot_settings', 'chatbot_animation_enabled');
+        register_setting('chatbot_settings', 'chatbot_primary_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('chatbot_settings', 'chatbot_secondary_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('chatbot_settings', 'chatbot_position', array(
+            'sanitize_callback' => 'sanitize_text_field'
+        ));
+        register_setting('chatbot_settings', 'chatbot_size', array(
+            'sanitize_callback' => 'sanitize_text_field'
+        ));
+        register_setting('chatbot_settings', 'chatbot_border_radius', array(
+            'sanitize_callback' => 'absint'
+        ));
+        register_setting('chatbot_settings', 'chatbot_chat_height', array(
+            'sanitize_callback' => 'absint'
+        ));
+        register_setting('chatbot_settings', 'chatbot_font_size', array(
+            'sanitize_callback' => 'absint'
+        ));
+        register_setting('chatbot_settings', 'chatbot_animation_enabled', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
+    }
+    
+    /**
+     * Sanitize checkbox input
+     */
+    public function sanitize_checkbox($input) {
+        return ($input === '1' || $input === 1 || $input === true) ? '1' : '0';
     }
     
     public function admin_page() {
