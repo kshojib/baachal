@@ -70,6 +70,23 @@ if (isset($_POST['submit'])) {
         update_option('chatbot_animation_enabled', '0');
     }
     
+    // Content Indexing Settings
+    update_option('baachal_content_indexing_enabled', isset($_POST['baachal_content_indexing_enabled']) ? '1' : '0');
+    update_option('baachal_auto_index', isset($_POST['baachal_auto_index']) ? '1' : '0');
+    
+    if (isset($_POST['baachal_indexable_post_types']) && is_array($_POST['baachal_indexable_post_types'])) {
+        $indexable_types = array_map('sanitize_text_field', $_POST['baachal_indexable_post_types']);
+        update_option('baachal_indexable_post_types', $indexable_types);
+    } else {
+        update_option('baachal_indexable_post_types', array());
+    }
+    
+    if (isset($_POST['baachal_content_max_results'])) {
+        $max_results = intval($_POST['baachal_content_max_results']);
+        $max_results = max(1, min(20, $max_results)); // Ensure between 1-20
+        update_option('baachal_content_max_results', $max_results);
+    }
+    
     // Clear dynamic terms cache when settings change
     delete_transient('baachal_dynamic_terms');
     
@@ -270,6 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'general' => 'General',
         'woocommerce' => 'WooCommerce',
         'search' => 'Product Search',
+        'content' => 'Content Indexing',
         'styling' => 'UI Styling',
         'advanced' => 'Advanced'
     );
@@ -306,6 +324,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <div id="tab-search" class="baachal-tab-panel">
                 <?php include BAACHAL_PLUGIN_PATH . 'admin/tabs/search.php'; ?>
+            </div>
+            
+            <div id="tab-content" class="baachal-tab-panel">
+                <?php include BAACHAL_PLUGIN_PATH . 'admin/tabs/content.php'; ?>
             </div>
             
             <div id="tab-styling" class="baachal-tab-panel">

@@ -18,6 +18,9 @@ define('BAACHAL_VERSION', '1.0.0');
 define('BAACHAL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('BAACHAL_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
+// Include required files
+require_once BAACHAL_PLUGIN_PATH . 'includes/content-indexer.php';
+
 // Main plugin class
 class Baachal {
     
@@ -34,6 +37,7 @@ class Baachal {
             'wp_ajax_clear_chat_history' => array($this, 'clear_chat_history'),
             'wp_ajax_nopriv_clear_chat_history' => array($this, 'clear_chat_history'),
             'wp_ajax_clear_baachal_cache' => array($this, 'handle_clear_cache_ajax'),
+            'wp_ajax_baachal_test_content_search' => array($this, 'handle_test_content_search'),
             'admin_menu' => array($this, 'add_admin_menu'),
             'admin_init' => array($this, 'register_settings'),
             'add_meta_boxes' => array($this, 'add_chat_meta_boxes')
@@ -489,6 +493,32 @@ class Baachal {
         wp_send_json_success('Cache cleared successfully');
     }
     
+    public function handle_test_content_search() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'baachal_test_search')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        // Check if user has permission
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        $query = sanitize_text_field($_POST['query']);
+        if (empty($query)) {
+            wp_send_json_error('Query is required');
+            return;
+        }
+        
+        // Get content indexer instance and search
+        $indexer = new Baachal_Content_Indexer();
+        $results = $indexer->search_content($query, 10);
+        
+        wp_send_json_success(array('results' => $results));
+    }
+    
     public function clear_chat_history() {
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'chatbot_nonce')) {
@@ -622,7 +652,7 @@ class Baachal {
         $site_description = get_bloginfo('description');
         $site_url = get_home_url();
         
-        $context = "You are a helpful assistant for the website '{$site_name}'. ";
+        $context = "You are Baachal, a helpful assistant for the website '{$site_name}'. ";
         $context .= "Website description: {$site_description}. ";
         $context .= "Website URL: {$site_url}. ";
         
@@ -634,8 +664,17 @@ class Baachal {
             }
         }
         
+        // Add website content context if enabled
+        if (get_option('baachal_content_indexing_enabled', '1') === '1') {
+            $content_context = $this->get_content_context($user_message);
+            if (!empty($content_context)) {
+                $context .= $content_context;
+            }
+        }
+        
         $context .= "Please answer questions about this website helpfully and accurately. ";
         $context .= "When mentioning specific products, always include clickable links in this format: [Product Name](URL). ";
+        $context .= "When referencing website pages or content, include clickable links in this format: [Page Title](URL). ";
         $context .= "If you don't know something specific about the website, be honest about it. ";
         $context .= "Keep your responses friendly and concise.";
         
@@ -1271,6 +1310,67 @@ class Baachal {
         return $context;
     }
     
+    private function get_content_context($user_message = '') {
+        // Debug logging if enabled
+        $debug_mode = get_option('chatbot_debug_mode', '0') === '1';
+        
+        if (empty($user_message)) {
+            return '';
+        }
+        
+        // Get content indexer instance
+        $indexer = new Baachal_Content_Indexer();
+        
+        // Get max results from settings
+        $max_results = get_option('baachal_content_max_results', 5);
+        
+        // Search for relevant content
+        $relevant_content = $indexer->search_content($user_message, $max_results);
+        
+        if (empty($relevant_content)) {
+            if ($debug_mode) {
+                error_log('Baachal: No relevant content found for: ' . $user_message);
+            }
+            return '';
+        }
+        
+        if ($debug_mode) {
+            $content_titles = array_map(function($c) { return $c['title']; }, $relevant_content);
+            error_log('Baachal: Found content: ' . implode(', ', $content_titles));
+        }
+        
+        return $this->format_content_context($relevant_content);
+    }
+    
+    private function format_content_context($content_items) {
+        if (empty($content_items)) {
+            return '';
+        }
+        
+        $context = "\n\nHere is relevant content from this website that may help answer your question:\n";
+        
+        foreach ($content_items as $item) {
+            $context .= "- **{$item['title']}** ({$item['post_type']})";
+            
+            if (!empty($item['excerpt'])) {
+                $excerpt = wp_strip_all_tags($item['excerpt']);
+                $excerpt = substr($excerpt, 0, 150) . (strlen($excerpt) > 150 ? '...' : '');
+                $context .= " | {$excerpt}";
+            }
+            
+            $context .= " | URL: {$item['url']}\n";
+        }
+        
+        $context .= "\nInstructions for using website content:\n";
+        $context .= "- Use this content to provide accurate answers about the website\n";
+        $context .= "- ALWAYS include page URLs as clickable links: [Page Title](URL)\n";
+        $context .= "- If the content doesn't fully answer the question, be honest about limitations\n";
+        $context .= "- Encourage users to visit the linked pages for more detailed information\n";
+        $context .= "- Synthesize information from multiple sources when relevant\n";
+        
+        return $context;
+    }
+    
     private function get_product_attributes($wc_product) {
         $attributes = array();
         
@@ -1337,6 +1437,19 @@ class Baachal {
             'normal',
             'high'
         );
+        
+        // Add content indexing meta box to indexable post types
+        $indexable_types = get_option('baachal_indexable_post_types', array('post', 'page'));
+        foreach ($indexable_types as $post_type) {
+            add_meta_box(
+                'baachal-content-indexing',
+                'Baachal AI Bot - Content Indexing',
+                array($this, 'render_content_indexing_meta_box'),
+                $post_type,
+                'side',
+                'default'
+            );
+        }
     }
     
     public function render_conversation_meta_box($post) {
@@ -1384,6 +1497,53 @@ class Baachal {
         echo '</div>';
         
         echo '<p style="margin-top: 10px;"><strong>Total Messages:</strong> ' . count($messages) . '</p>';
+    }
+    
+    public function render_content_indexing_meta_box($post) {
+        wp_nonce_field('baachal_content_indexing', 'baachal_content_indexing_nonce');
+        
+        $exclude_from_index = get_post_meta($post->ID, '_baachal_exclude_from_index', true);
+        
+        echo '<p>';
+        echo '<label>';
+        echo '<input type="checkbox" name="baachal_exclude_from_index" value="1" ' . checked($exclude_from_index, '1', false) . ' />';
+        echo ' Exclude from chatbot indexing';
+        echo '</label>';
+        echo '</p>';
+        echo '<p class="description">Check this box to prevent this content from being indexed for chatbot searches.</p>';
+        
+        // Add save hook
+        add_action('save_post', array($this, 'save_content_indexing_meta'));
+    }
+    
+    public function save_content_indexing_meta($post_id) {
+        // Check if our nonce is set and verify it
+        if (!isset($_POST['baachal_content_indexing_nonce']) || !wp_verify_nonce($_POST['baachal_content_indexing_nonce'], 'baachal_content_indexing')) {
+            return;
+        }
+        
+        // If this is an autosave, our form has not been submitted, so we don't want to do anything
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        
+        // Check the user's permissions
+        if (isset($_POST['post_type']) && 'page' == $_POST['post_type']) {
+            if (!current_user_can('edit_page', $post_id)) {
+                return;
+            }
+        } else {
+            if (!current_user_can('edit_post', $post_id)) {
+                return;
+            }
+        }
+        
+        // Save the meta value
+        if (isset($_POST['baachal_exclude_from_index'])) {
+            update_post_meta($post_id, '_baachal_exclude_from_index', '1');
+        } else {
+            delete_post_meta($post_id, '_baachal_exclude_from_index');
+        }
     }
     
     public function register_settings() {
