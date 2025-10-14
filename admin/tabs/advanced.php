@@ -11,10 +11,10 @@ if (!defined('ABSPATH')) {
 <table class="form-table" role="presentation">
     <tr>
         <th scope="row">
-            <label for="chatbot_debug_mode">Debug Mode</label>
+            <label for="baachal_debug_mode">Debug Mode</label>
         </th>
         <td>
-            <input type="checkbox" id="chatbot_debug_mode" name="chatbot_debug_mode" value="1" <?php checked($debug_mode, '1'); ?> />
+            <input type="checkbox" id="baachal_debug_mode" name="baachal_debug_mode" value="1" <?php checked($debug_mode, '1'); ?> />
             <p class="description">Enable to see detailed error messages in browser console (for troubleshooting)</p>
         </td>
     </tr>

@@ -1,6 +1,5 @@
 === Baachal AI Chatbot ===
 Contributors: shojibkhan
-Donate link: https://www.shojibkhan.com/donate
 Tags: chatbot, ai, gemini, customer support, woocommerce, artificial intelligence, chat widget, automated support
 Requires at least: 5.0
 Tested up to: 6.8

@@ -24,30 +24,30 @@ if (!defined('ABSPATH')) {
 <table class="form-table" role="presentation">
     <tr>
         <th scope="row">
-            <label for="chatbot_woocommerce_integration">Enable WooCommerce Integration</label>
+            <label for="baachal_woocommerce_integration">Enable WooCommerce Integration</label>
         </th>
         <td>
-            <input type="checkbox" id="chatbot_woocommerce_integration" name="chatbot_woocommerce_integration" value="1" <?php checked($woocommerce_integration, '1'); ?> <?php echo !class_exists('WooCommerce') ? 'disabled' : ''; ?> />
+            <input type="checkbox" id="baachal_woocommerce_integration" name="baachal_woocommerce_integration" value="1" <?php checked($woocommerce_integration, '1'); ?> <?php echo !class_exists('WooCommerce') ? 'disabled' : ''; ?> />
             <p class="description">Allow the chatbot to help customers find products from your store</p>
         </td>
     </tr>
     
     <tr>
         <th scope="row">
-            <label for="chatbot_message_persistence">Message Persistence</label>
+            <label for="baachal_message_persistence">Message Persistence</label>
         </th>
         <td>
-            <input type="checkbox" id="chatbot_message_persistence" name="chatbot_message_persistence" value="1" <?php checked($message_persistence, '1'); ?> />
+            <input type="checkbox" id="baachal_message_persistence" name="baachal_message_persistence" value="1" <?php checked($message_persistence, '1'); ?> />
             <p class="description">Save chat messages in browser so they persist across page reloads</p>
         </td>
     </tr>
     
     <tr>
         <th scope="row">
-            <label for="chatbot_show_clear_history">Show Clear History Button</label>
+            <label for="baachal_show_clear_history">Show Clear History Button</label>
         </th>
         <td>
-            <input type="checkbox" id="chatbot_show_clear_history" name="chatbot_show_clear_history" value="1" <?php checked($show_clear_history, '1'); ?> />
+            <input type="checkbox" id="baachal_show_clear_history" name="baachal_show_clear_history" value="1" <?php checked($show_clear_history, '1'); ?> />
             <p class="description">Show the clear chat history button in the chatbot header</p>
         </td>
     </tr>

@@ -24,7 +24,7 @@ if (class_exists('Baachal')) {
         global $wpdb;
         
         // Delete all plugin options
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'baachal_%' OR option_name LIKE 'chatbot_%'");
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'baachal_%' OR option_name LIKE 'baachal_%'");
         
         // Delete content index table
         $index_table = $wpdb->prefix . 'baachal_content_index';
@@ -32,7 +32,7 @@ if (class_exists('Baachal')) {
         
         // Delete all conversations
         $conversations = get_posts(array(
-            'post_type' => 'chatbot_conversation',
+            'post_type' => 'baachal_conversation',
             'numberposts' => -1,
             'post_status' => 'any'
         ));

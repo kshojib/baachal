@@ -11,40 +11,40 @@ if (!defined('ABSPATH')) {
 <table class="form-table" role="presentation">
     <tr>
         <th scope="row">
-            <label for="chatbot_max_terms">Maximum Terms</label>
+            <label for="baachal_max_terms">Maximum Terms</label>
         </th>
         <td>
-            <input type="number" id="chatbot_max_terms" name="chatbot_max_terms" value="<?php echo esc_attr($max_terms); ?>" min="10" max="200" />
+            <input type="number" id="baachal_max_terms" name="baachal_max_terms" value="<?php echo esc_attr($max_terms); ?>" min="10" max="200" />
             <p class="description">Maximum number of important terms to extract from your products (10-200)</p>
         </td>
     </tr>
     
     <tr>
         <th scope="row">
-            <label for="chatbot_min_term_length">Minimum Term Length</label>
+            <label for="baachal_min_term_length">Minimum Term Length</label>
         </th>
         <td>
-            <input type="number" id="chatbot_min_term_length" name="chatbot_min_term_length" value="<?php echo esc_attr($min_term_length); ?>" min="2" max="10" />
+            <input type="number" id="baachal_min_term_length" name="baachal_min_term_length" value="<?php echo esc_attr($min_term_length); ?>" min="2" max="10" />
             <p class="description">Minimum length of terms to consider important (2-10 characters)</p>
         </td>
     </tr>
     
     <tr>
         <th scope="row">
-            <label for="chatbot_cache_duration">Cache Duration (seconds)</label>
+            <label for="baachal_cache_duration">Cache Duration (seconds)</label>
         </th>
         <td>
-            <input type="number" id="chatbot_cache_duration" name="chatbot_cache_duration" value="<?php echo esc_attr($cache_duration); ?>" min="3600" max="604800" />
+            <input type="number" id="baachal_cache_duration" name="baachal_cache_duration" value="<?php echo esc_attr($cache_duration); ?>" min="3600" max="604800" />
             <p class="description">How long to cache extracted terms (3600 = 1 hour, 86400 = 1 day, 604800 = 1 week)</p>
         </td>
     </tr>
     
     <tr>
         <th scope="row">
-            <label for="chatbot_exclude_terms">Exclude Terms</label>
+            <label for="baachal_exclude_terms">Exclude Terms</label>
         </th>
         <td>
-            <textarea id="chatbot_exclude_terms" name="chatbot_exclude_terms" rows="3" cols="50"><?php echo esc_textarea($exclude_terms_string); ?></textarea>
+            <textarea id="baachal_exclude_terms" name="baachal_exclude_terms" rows="3" cols="50"><?php echo esc_textarea($exclude_terms_string); ?></textarea>
             <p class="description">Comma-separated list of words to ignore when extracting terms (e.g., "the,and,or,size,color")</p>
         </td>
     </tr>
@@ -76,37 +76,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'clear_cache') {
             }
             ?>
             <p>
-                <button type="button" class="button" onclick="clearProductCache()">Clear Product Terms Cache</button>
+                <button type="button" id="clear-cache-btn" class="button">Clear Product Terms Cache</button>
             </p>
             <p class="description">This will force the system to re-analyze your products and extract new terms based on current settings.</p>
         </td>
     </tr>
 </table>
-
-<script>
-function clearProductCache() {
-    if (confirm('Are you sure you want to clear the product terms cache?')) {
-        fetch(ajaxurl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'action=clear_baachal_cache&nonce=' + '<?php echo wp_create_nonce('clear_baachal_cache'); ?>'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error clearing cache: ' + data.data);
-            }
-        })
-        .catch(error => {
-            alert('Error clearing cache: ' + error);
-        });
-    }
-}
-</script>
 
 <h3>How Dynamic Search Works</h3>
 <ul>

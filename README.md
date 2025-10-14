@@ -7,213 +7,396 @@
 
 ## Overview
 
-Transform your WordPress website with an intelligent AI chatbot powered by Google Gemini. Baachal AI Chatbot provides instant, accurate responses about your products, services, and content through advanced artificial intelligence.
+Transform your WordPress website with an intelligent AI chatbot powered by multiple leading AI providers. Baachal AI Chatbot provides instant, accurate responses about your products, services, and content through advanced artificial intelligence with support for Google Gemini, OpenAI ChatGPT, Anthropic Claude, and xAI Grok.
 
 ## 🚀 Key Features
 
-- **🧠 Intelligent AI**: Powered by Google Gemini for natural conversations
-- **📚 Content Awareness**: Automatically indexes your entire website
-- **🛒 WooCommerce Integration**: Deep product knowledge and recommendations
-- **🎨 Customizable Design**: Match your brand with custom colors and styling
-- **📱 Mobile Responsive**: Perfect experience on all devices
-- **⚡ Performance Optimized**: Fast loading with intelligent caching
-- **🔒 Secure & Private**: GDPR compliant with local data control
-- **🌍 Translation Ready**: Multilingual support included
+### 🤖 Multi-AI Provider Support
+
+- **Google Gemini**: Latest models including Gemini 2.5 Pro/Flash
+- **OpenAI ChatGPT**: GPT-5, GPT-4.1, and GPT-4o series
+- **Anthropic Claude**: Sonnet 4.5, Opus 4.1, and Haiku 3.5
+- **xAI Grok**: Latest Grok-4 Fast models with reasoning capabilities
+
+### 🎨 Enhanced User Experience
+
+- **Modern Color Picker**: Beautiful preset palettes and live color preview
+- **Responsive Design**: Perfect experience on all devices
+- **Customizable Styling**: Match your brand with advanced theming options
+- **Smooth Animations**: Polished interactions and transitions
+
+### 📚 Intelligent Content Awareness
+
+- **Website Content Indexing**: Automatically understands your entire site
+- **WooCommerce Deep Integration**: Product knowledge and recommendations
+- **Smart Search**: Context-aware responses with relevant product links
+- **Real-time Updates**: Dynamic content synchronization
+
+### 🔧 Developer & Admin Features
+
+- **WordPress Standards Compliant**: Follows all WordPress coding best practices
+- **Extensible Architecture**: Rich hooks and filters for customization
+- **Conversation Management**: Full admin dashboard for chat oversight
+- **Performance Optimized**: Intelligent caching and efficient queries
+
+### 🔒 Security & Privacy
+
+- **GDPR Compliant**: Local data control and privacy protection
+- **Secure Implementation**: Proper nonce verification and data sanitization
+- **Capability Checks**: Role-based access control
+- **Safe API Handling**: Secure external API communication
 
 ## Installation
 
-1. Upload the `baachal` folder to your `/wp-content/plugins/` directory
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Go to **Settings > Baachal AI bot** to configure the plugin
+### Automatic Installation (Recommended)
 
-## Configuration
+1. Go to **Plugins > Add New** in your WordPress admin
+2. Search for "Baachal AI Chatbot"
+3. Click **Install Now** and then **Activate**
+4. Navigate to **Settings > Baachal AI Bot** to configure
 
-### Getting Your Gemini API Key
+### Manual Installation
 
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Sign in with your Google account
-3. Click "Create API Key"
-4. Copy the API key
+1. Download the plugin ZIP file
+2. Upload and extract to `/wp-content/plugins/baachal/`
+3. Activate through the **Plugins** menu in WordPress
+4. Go to **Settings > Baachal AI Bot** to configure
 
-### Plugin Settings
+## Quick Setup Guide
 
-1. Go to **Settings > Baachal AI bot** in your WordPress admin
-2. Paste your Gemini API key
-3. Choose your preferred AI model (default: gemini-2.0-flash-exp)
-4. Enable the chatbot
-5. Customize the welcome message
-6. Configure WooCommerce integration (if using WooCommerce)
-7. Enable/disable message persistence
-8. Save settings
+### 1. Choose Your AI Provider
+
+**Google Gemini** (Recommended for most users)
+
+- Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+- Sign in and create an API key
+- Free tier available with generous limits
+
+**OpenAI ChatGPT** (Best for advanced reasoning)
+
+- Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+- Create an account and generate API key
+- Pay-per-use pricing
+
+**Anthropic Claude** (Excellent for complex tasks)
+
+- Visit [Anthropic Console](https://console.anthropic.com/)
+- Sign up and create API key
+- Free credits for new users
+
+**xAI Grok** (Latest technology)
+
+- Visit [xAI Console](https://console.x.ai/)
+- Create account and generate API key
+- Advanced reasoning capabilities
+
+### 2. Plugin Configuration
+
+1. **General Settings**:
+
+   - Enable the chatbot
+   - Select your AI provider
+   - Enter your API key
+   - Choose the AI model
+   - Customize chatbot title and welcome message
+
+2. **Styling** (Optional):
+
+   - Choose primary and secondary colors using the enhanced color picker
+   - Set chatbot position and size
+   - Adjust border radius and font settings
+   - Enable/disable animations
+
+3. **WooCommerce** (If applicable):
+
+   - Enable product integration
+   - Configure search parameters
+   - Set product recommendation limits
+
+4. **Content Indexing** (Recommended):
+   - Enable automatic content indexing
+   - Select post types to include
+   - Configure search relevance settings
+
+## AI Models Available
+
+### Google Gemini Models
+
+- **Gemini 2.5 Pro** - Most advanced for complex reasoning
+- **Gemini 2.5 Flash** - Best price-performance balance ⭐ _Recommended_
+- **Gemini 2.5 Flash-Lite** - Ultra-fast responses
+- **Gemini 2.0 Flash** - Reliable workhorse model
+- **Gemini 2.0 Flash-Lite** - Small and efficient
+
+### OpenAI Models
+
+- **GPT-5** - Latest flagship model ⭐ _Recommended_
+- **GPT-5 Pro** - Enhanced precision and reasoning
+- **GPT-5 Mini** - Cost-efficient option
+- **GPT-5 Nano** - Fastest responses
+- **GPT-4.1** - Smartest non-reasoning model
+- **GPT-4o** - Previous generation flagship
+
+### Anthropic Claude Models
+
+- **Claude Sonnet 4.5** - Best for complex tasks ⭐ _Recommended_
+- **Claude Opus 4.1** - Exceptional reasoning capabilities
+- **Claude Sonnet 4** - High-performance model
+- **Claude Sonnet 3.7** - Extended thinking capabilities
+- **Claude Haiku 3.5** - Fastest Claude model
+
+### xAI Grok Models
+
+- **Grok 4 Fast** - Latest model with reasoning ⭐ _Recommended_
+- **Grok 4 Fast Reasoning** - Enhanced thinking process
+- **Grok 4 Fast Non-Reasoning** - Direct, fast responses
 
 ## Usage
 
-Once configured, Baachal AI bot will appear as a floating icon in the bottom-right corner of your website. Visitors can:
+### For Website Visitors
 
-- Click the icon to open the chat interface
-- Type questions about your website or products
-- Get AI-powered responses with website and product context
-- Click on product links provided by the bot
-- View conversation history (if persistence is enabled)
-- Clear chat history using the trash icon
-- Close the chat at any time
+1. **Starting a Conversation**:
+
+   - Click the floating chatbot icon (usually bottom-right)
+   - Type your question in the input field
+   - Press Enter or click the send button
+
+2. **Getting Product Information** (WooCommerce sites):
+
+   - Ask about specific products: "Tell me about your laptops"
+   - Request recommendations: "What's the best phone under $500?"
+   - Get product details: "Does the iPhone 15 come in blue?"
+
+3. **Website Navigation Help**:
+
+   - Ask about services: "What services do you offer?"
+   - Find information: "How do I contact support?"
+   - Get directions: "Where are your locations?"
+
+4. **Managing Conversations**:
+   - View message history (if enabled)
+   - Clear conversation using the trash icon
+   - Minimize/maximize the chat window
+
+### For Administrators
+
+1. **Monitoring Conversations**:
+
+   - Visit **Tools > Baachal Conversations**
+   - View all customer interactions
+   - See conversation details and metadata
+
+2. **Managing Settings**:
+
+   - **General Tab**: Basic configuration and AI settings
+   - **WooCommerce Tab**: Product integration settings
+   - **Content Tab**: Website indexing configuration
+   - **UI Styling Tab**: Appearance customization
+   - **Advanced Tab**: Performance and debugging options
+
+3. **Performance Optimization**:
+   - Monitor API usage and costs
+   - Configure caching settings
+   - Adjust content indexing frequency
+   - Enable/disable debug mode for troubleshooting
 
 ## Advanced Features
 
+### Content Indexing System
+
+The plugin automatically indexes your website content to provide contextual responses:
+
+- **Post Types**: Pages, posts, custom post types
+- **WooCommerce**: Products, categories, attributes
+- **Search Optimization**: Weighted relevance scoring
+- **Cache Management**: Intelligent cache invalidation
+- **Performance**: Background processing for large sites
+
 ### WooCommerce Integration
 
-When WooCommerce is active and integration is enabled:
+Deep integration with WooCommerce provides:
 
-- Baachal knows about your products, prices, and categories
-- Provides clickable product links in responses
-- Helps customers find products based on their needs
-- Includes product attributes and descriptions in context
+- **Product Knowledge**: Prices, descriptions, availability
+- **Category Awareness**: Product organization and filtering
+- **Attribute Support**: Colors, sizes, materials, etc.
+- **Inventory Status**: Stock levels and availability
+- **Clickable Links**: Direct product page navigation
 
-### Message Persistence
+### Developer Features
 
-- Chat messages are saved in WordPress database
-- Conversations persist across page reloads and sessions
-- Admin can view all conversations in **Tools > Baachal Conversations**
-- Each conversation includes user details, timestamps, and full message history
+Extensive hook system for customization:
 
-### Admin Conversation Management
+```php
+// Modify AI response before display
+add_filter('baachal_bot_response', 'custom_response_handler', 10, 3);
 
-- View all customer conversations in WordPress admin
-- See conversation details including IP address, user agent, timestamps
-- Read full chat history with visual distinction between user and bot messages
-- Monitor bot performance and customer interactions
+// Add custom context to AI prompts
+add_filter('baachal_api_params', 'add_custom_context', 10, 2);
+
+// Handle custom message types
+add_filter('baachal_custom_message_handler', 'handle_special_commands', 10, 3);
+
+// Modify chatbot visibility
+add_filter('baachal_is_enabled', 'conditional_chatbot_display');
+```
+
+### Security Features
+
+- **Input Sanitization**: All user inputs are properly sanitized
+- **Output Escaping**: Safe HTML output with XSS protection
+- **Nonce Verification**: CSRF protection for all AJAX requests
+- **Capability Checks**: Role-based access to admin features
+- **Rate Limiting**: Protection against API abuse
 
 ## File Structure
 
 ```
 baachal/
-├── baachal.php                    # Main plugin file with core functionality
-├── uninstall.php                  # Plugin cleanup on uninstall
-├── README.md                      # Project documentation (GitHub)
-├── readme.txt                     # WordPress.org plugin repository format
+├── baachal.php                    # Main plugin file with multi-AI support
+├── uninstall.php                  # Plugin cleanup and data removal
+├── README.md                      # Comprehensive documentation
+├── readme.txt                     # WordPress.org repository format
 ├── CHANGELOG.md                   # Version history and updates
-├── DEVELOPER_HOOKS.md             # Developer documentation for hooks
+├── DEVELOPER_HOOKS.md             # Developer API documentation
 ├── admin/
-│   ├── settings-page.php          # Main admin settings interface
+│   ├── settings-page.php          # Tabbed admin interface
 │   └── tabs/
-│       ├── general.php             # General settings tab
-│       ├── woocommerce.php         # WooCommerce integration settings
-│       ├── search.php              # Product search configuration
-│       ├── content.php             # Content indexing settings
-│       ├── styling.php             # UI customization options
-│       └── advanced.php            # Advanced plugin settings
+│       ├── general.php             # Multi-provider AI settings
+│       ├── woocommerce.php         # E-commerce integration
+│       ├── search.php              # Product search optimization
+│       ├── content.php             # Content indexing controls
+│       ├── styling.php             # Enhanced UI customization
+│       └── advanced.php            # Performance and debugging
 ├── assets/
-│   ├── chatbot.css                 # Frontend chatbot styles
-│   ├── chatbot.js                  # Frontend chatbot functionality
+│   ├── chatbot.css                 # Frontend responsive styles
+│   ├── chatbot.js                  # Interactive chat functionality
+│   ├── admin.css                   # Enhanced admin interface styles
+│   ├── admin.js                    # Advanced admin interactions
 │   ├── images/                     # Plugin icons and graphics
 │   └── plugin-assets/              # WordPress.org banner assets
 ├── includes/
-│   └── content-indexer.php         # Website content indexing system
+│   └── content-indexer.php         # Intelligent content indexing
 ├── languages/
-│   └── baachal.pot                 # Translation template file
+│   └── baachal.pot                 # Translation template
 └── templates/
-    └── chatbot-widget.php          # Chatbot HTML widget template
+    └── chatbot-widget.php          # Responsive chat widget
 ```
-
-## AI Models Supported
-
-Baachal AI bot supports multiple Google Gemini models:
-
-- **gemini-2.0-flash-exp** (Default) - Latest experimental model
-- **gemini-1.5-pro** - Production-ready, high-quality responses
-- **gemini-1.5-flash** - Faster responses, good for high-traffic sites
-- **gemini-pro** - Balanced performance and quality
 
 ## Customization
 
-### Styling
+### Color Themes
 
-Edit `assets/chatbot.css` to customize the appearance:
+Use the enhanced color picker in **UI Styling** tab:
 
-- Colors and gradients
-- Positioning and sizing
-- Animation effects
-- Responsive behavior
+- **Primary Color**: Headers, buttons, links, accents
+- **Secondary Color**: Backgrounds, message bubbles, secondary elements
+- **Preset Palettes**: Curated color combinations
+- **Live Preview**: See changes in real-time
 
-### Functionality
+### Advanced Styling
 
-Edit `assets/chatbot.js` to modify:
+```css
+/* Custom CSS for advanced styling */
+.chatbot-container {
+  /* Your custom styles */
+}
 
-- Chat behavior
-- Message handling
-- User interactions
-- AJAX communication
+.chatbot-message {
+  /* Message styling */
+}
 
-### AI Context
+.chatbot-header {
+  /* Header customization */
+}
+```
 
-The plugin automatically provides comprehensive context to the AI:
+### JavaScript Customization
 
-- Website name, description, and URL
-- WooCommerce product catalog (when enabled)
-- Product prices, categories, and attributes
-- Instructions for helpful and accurate responses
-- Proper link formatting for clickable product URLs
-
-## Technical Details
-
-- **WordPress Integration**: Uses proper WordPress hooks, filters, and standards
-- **Security**: Includes nonce verification, data sanitization, and capability checks
-- **AJAX**: WordPress AJAX for real-time communication
-- **Database**: Custom post type for conversation storage
-- **Session Management**: UUID-based session tracking for anonymous users
-- **API Integration**: Google Gemini API with error handling and retry logic
-- **Responsive Design**: Mobile-friendly interface
+```javascript
+// Custom chat behavior
+jQuery(document).ready(function ($) {
+  // Your custom interactions
+});
+```
 
 ## Troubleshooting
 
-### Baachal not appearing
+### Common Issues
 
-- Check if the plugin is activated
-- Ensure "Enable Baachal AI bot" is checked in settings
-- Verify there are no JavaScript errors in browser console
-- Check that your theme loads `wp_footer()` properly
+**Chatbot Not Appearing**
 
-### AI not responding
+- ✅ Plugin activated and enabled in settings
+- ✅ API key configured correctly
+- ✅ No JavaScript errors in console
+- ✅ Theme includes `wp_footer()` hook
 
-- Verify your Gemini API key is correct and active
-- Check that your API key has quota remaining
-- Ensure your website can make external HTTP requests
-- Try switching to a different AI model in settings
-- Enable debug mode to see detailed error messages
+**AI Not Responding**
 
-### WooCommerce integration issues
+- ✅ API key valid and has quota
+- ✅ Website can make external requests
+- ✅ Selected model is available
+- ✅ No network connectivity issues
 
-- Ensure WooCommerce is active and products are published
-- Check that "WooCommerce Integration" is enabled in settings
-- Verify products have proper categories and pricing
+**WooCommerce Integration Issues**
 
-### Conversation persistence issues
+- ✅ WooCommerce active with published products
+- ✅ Integration enabled in plugin settings
+- ✅ Products have proper categories and pricing
+- ✅ Content indexing is working
 
-- Check that "Message Persistence" is enabled in settings
-- Verify database write permissions
-- Look for PHP errors in WordPress error logs
+**Performance Issues**
 
-### Styling issues
+- ✅ Enable caching for large product catalogs
+- ✅ Optimize content indexing frequency
+- ✅ Choose appropriate AI model for traffic
+- ✅ Monitor API usage and costs
 
-- Check for CSS conflicts with your theme
-- Use browser developer tools to debug styling
-- Ensure the plugin CSS is loading properly
-- Clear any caching plugins
+### Debug Mode
 
-## Support
+Enable debug mode in **Advanced Settings** for detailed logging:
 
-This plugin is developed by **Shojib Khan**. For support:
+- API request/response details
+- Content indexing status
+- Performance metrics
+- Error tracking
 
-- Check the WordPress error logs for PHP errors
-- Use browser developer tools for JavaScript debugging
-- Verify API key and network connectivity
-- Review conversation logs in **Tools > Baachal Conversations**
+## Changelog
+
+### Version 1.0.0
+
+- ✨ Multi-AI provider support (Gemini, OpenAI, Claude, Grok)
+- 🎨 Enhanced color picker with preset palettes
+- 🔧 WordPress coding standards compliance
+- 🚀 Performance optimizations and caching
+- 📱 Improved responsive design
+- 🛡️ Enhanced security and sanitization
+- 📚 Comprehensive documentation
+
+## Support & Contributing
+
+For support, feature requests, or bug reports:
+
+- 📧 Email: support@shojibkhan.com
+- 🌐 Website: [https://www.shojibkhan.com](https://www.shojibkhan.com)
+- 📖 Documentation: Plugin settings pages include contextual help
 
 ## Author
 
 **Shojib Khan**  
+Full-Stack Developer & WordPress Expert  
 Website: [https://www.shojibkhan.com](https://www.shojibkhan.com)
 
 ## License
 
-This plugin is provided as-is for educational and commercial purposes.
+This plugin is licensed under the GPL v2 or later.
+
+```
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License, version 2, as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+```

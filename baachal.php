@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Baachal AI Chatbot
  * Plugin URI: https://github.com/kshojib/baachal
- * Description: Intelligent AI chatbot powered by Google Gemini API. Provides customer support with deep knowledge of your website content, products, and services. Features automatic content indexing, customizable styling, and seamless WooCommerce integration.
+ * Description: Intelligent AI chatbot with multi-provider support (Google Gemini, OpenAI ChatGPT, Anthropic Claude, xAI Grok). Provides customer support with deep knowledge of your website content, products, and services. Features automatic content indexing, customizable styling, and seamless WooCommerce integration.
  * Version: 1.0.0
  * Requires at least: 5.0
  * Tested up to: 6.8
@@ -50,17 +50,18 @@ class Baachal {
             'init' => array($this, 'init'),
             'wp_enqueue_scripts' => array($this, 'enqueue_scripts'),
             'wp_footer' => array($this, 'add_chatbot_html'),
-            'wp_ajax_chatbot_message' => array($this, 'handle_chatbot_message'),
-            'wp_ajax_nopriv_chatbot_message' => array($this, 'handle_chatbot_message'),
-            'wp_ajax_get_chat_history' => array($this, 'get_chat_history'),
-            'wp_ajax_nopriv_get_chat_history' => array($this, 'get_chat_history'),
-            'wp_ajax_clear_chat_history' => array($this, 'clear_chat_history'),
-            'wp_ajax_nopriv_clear_chat_history' => array($this, 'clear_chat_history'),
+            'wp_ajax_baachal_message' => array($this, 'handle_chatbot_message'),
+            'wp_ajax_nopriv_baachal_message' => array($this, 'handle_chatbot_message'),
+            'wp_ajax_baachal_get_chat_history' => array($this, 'get_chat_history'),
+            'wp_ajax_nopriv_baachal_get_chat_history' => array($this, 'get_chat_history'),
+            'wp_ajax_baachal_clear_chat_history' => array($this, 'clear_chat_history'),
+            'wp_ajax_nopriv_baachal_clear_chat_history' => array($this, 'clear_chat_history'),
             'wp_ajax_clear_baachal_cache' => array($this, 'handle_clear_cache_ajax'),
             'wp_ajax_baachal_test_content_search' => array($this, 'handle_test_content_search'),
             'wp_ajax_baachal_reindex_content' => array($this, 'handle_reindex_content_ajax'),
             'admin_menu' => array($this, 'add_admin_menu'),
             'admin_init' => array($this, 'register_settings'),
+            'admin_enqueue_scripts' => array($this, 'enqueue_admin_scripts'),
             'add_meta_boxes' => array($this, 'add_chat_meta_boxes')
         ));
         
@@ -166,7 +167,7 @@ class Baachal {
             global $wpdb;
             
             // Delete all plugin options
-            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'baachal_%' OR option_name LIKE 'chatbot_%'");
+            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'baachal_%' OR option_name LIKE 'baachal_%'");
             
             // Delete content index table
             $index_table = $wpdb->prefix . 'baachal_content_index';
@@ -174,7 +175,7 @@ class Baachal {
             
             // Delete all conversations
             $conversations = get_posts(array(
-                'post_type' => 'chatbot_conversation',
+                'post_type' => 'baachal_conversation',
                 'numberposts' => -1,
                 'post_status' => 'any'
             ));
@@ -192,26 +193,30 @@ class Baachal {
     }
     
     private function set_default_options() {
+        // Handle migration from single-provider to multi-provider
+        $this->migrate_provider_settings();
+        
         // Set default options if they don't exist
         $defaults = array(
-            'chatbot_enabled' => '1',
-            'chatbot_welcome_message' => 'Hello! How can I help you today?',
-            'chatbot_title' => 'Baachal AI Bot',
-            'chatbot_gemini_model' => 'gemini-2.0-flash-exp',
-            'chatbot_position' => 'bottom-right',
-            'chatbot_size' => 'medium',
-            'chatbot_primary_color' => '#007cba',
-            'chatbot_secondary_color' => '#f0f0f1',
-            'chatbot_border_radius' => '12',
-            'chatbot_chat_height' => '400',
-            'chatbot_font_size' => '14',
-            'chatbot_animation_enabled' => '1',
-            'chatbot_woocommerce_integration' => '1',
-            'chatbot_message_persistence' => '1',
-            'chatbot_show_clear_history' => '1',
-            'chatbot_max_terms' => '50',
-            'chatbot_min_term_length' => '3',
-            'chatbot_cache_duration' => DAY_IN_SECONDS,
+            'baachal_enabled' => '1',
+            'baachal_welcome_message' => 'Hello! How can I help you today?',
+            'baachal_title' => 'Baachal AI Bot',
+            'baachal_ai_provider' => 'gemini',
+            'baachal_ai_model' => 'gemini-2.5-flash',
+            'baachal_position' => 'bottom-right',
+            'baachal_size' => 'medium',
+            'baachal_primary_color' => '#007cba',
+            'baachal_secondary_color' => '#f0f0f1',
+            'baachal_border_radius' => '12',
+            'baachal_chat_height' => '400',
+            'baachal_font_size' => '14',
+            'baachal_animation_enabled' => '1',
+            'baachal_woocommerce_integration' => '1',
+            'baachal_message_persistence' => '1',
+            'baachal_show_clear_history' => '1',
+            'baachal_max_terms' => '50',
+            'baachal_min_term_length' => '3',
+            'baachal_cache_duration' => DAY_IN_SECONDS,
             'baachal_content_indexing_enabled' => '1',
             'baachal_auto_index' => '1',
             'baachal_content_max_results' => '5',
@@ -223,6 +228,35 @@ class Baachal {
             if (get_option($option) === false) {
                 update_option($option, $value);
             }
+        }
+    }
+    
+    private function migrate_provider_settings() {
+        // Check if this is an upgrade from single-provider version
+        $old_gemini_model = get_option('baachal_gemini_model');
+        $new_ai_model = get_option('baachal_ai_model');
+        
+        // If old model exists but new model doesn't, migrate
+        if ($old_gemini_model && !$new_ai_model) {
+            // Map old models to new models
+            $model_mapping = array(
+                'gemini-2.0-flash-exp' => 'gemini-2.5-flash',
+                'gemini-1.5-flash' => 'gemini-2.5-flash',
+                'gemini-1.5-pro' => 'gemini-2.5-pro',
+                'gemini-pro' => 'gemini-2.5-flash'
+            );
+            
+            $migrated_model = isset($model_mapping[$old_gemini_model]) ? $model_mapping[$old_gemini_model] : 'gemini-2.5-flash';
+            update_option('baachal_ai_model', $migrated_model);
+            update_option('baachal_ai_provider', 'gemini');
+        }
+        
+        // Migrate old Gemini API key if it exists and provider is not set
+        $old_api_key = get_option('baachal_gemini_api_key');
+        $provider = get_option('baachal_ai_provider');
+        
+        if ($old_api_key && !$provider) {
+            update_option('baachal_ai_provider', 'gemini');
         }
     }
     
@@ -268,7 +302,7 @@ class Baachal {
             'map_meta_cap' => true,
         );
         
-        register_post_type('chatbot_conversation', $args);
+        register_post_type('baachal_conversation', $args);
     }
     
     public function enqueue_scripts() {
@@ -285,27 +319,65 @@ class Baachal {
         // Allow other plugins to modify localized data
         $localized_data = apply_filters('baachal_localized_data', array(
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('chatbot_nonce'),
-            'debug_mode' => get_option('chatbot_debug_mode', '0'),
-            'message_persistence' => get_option('chatbot_message_persistence', '1'),
+            'nonce' => wp_create_nonce('baachal_nonce'),
+            'debug_mode' => get_option('baachal_debug_mode', '0'),
+            'message_persistence' => get_option('baachal_message_persistence', '1'),
             'session_id' => $this->get_chat_session_id(),
             'plugin_url' => BAACHAL_PLUGIN_URL
         ));
 
         // Localize script for AJAX
-        wp_localize_script('baachal-js', 'chatbot_ajax', $localized_data);
+        wp_localize_script('baachal-js', 'baachal_ajax', $localized_data);
 
         // Allow other plugins to enqueue additional scripts/styles
         do_action('baachal_after_enqueue_scripts');
     }
     
+    public function enqueue_admin_scripts($hook) {
+        // Only load on our plugin's admin pages
+        if ($hook !== 'settings_page_baachal-settings' && strpos($hook, 'baachal') === false) {
+            return;
+        }
+        
+        // Enqueue admin JavaScript
+        wp_enqueue_script(
+            'baachal-admin-js',
+            BAACHAL_PLUGIN_URL . 'assets/admin.js',
+            array('jquery'),
+            BAACHAL_VERSION,
+            true
+        );
+        
+        // Enqueue admin CSS
+        wp_enqueue_style(
+            'baachal-admin-css',
+            BAACHAL_PLUGIN_URL . 'assets/admin.css',
+            array(),
+            BAACHAL_VERSION
+        );
+        
+        // Localize admin script
+        wp_localize_script('baachal-admin-js', 'baachal_admin', array(
+            'reindex_confirm' => esc_html__('This will reindex all content. Continue?', 'baachal'),
+            'indexing_text' => esc_html__('Indexing...', 'baachal'),
+            'reindex_text' => esc_html__('Reindex All Content', 'baachal'),
+            'reindex_nonce' => wp_create_nonce('baachal_reindex_content'),
+            'test_search_nonce' => wp_create_nonce('baachal_test_search'),
+            'clear_cache_confirm' => esc_html__('Are you sure you want to clear the cache?', 'baachal'),
+            'clearing_text' => esc_html__('Clearing...', 'baachal'),
+            'clear_cache_text' => esc_html__('Clear Cache', 'baachal'),
+            'cache_cleared_text' => esc_html__('Cache cleared successfully!', 'baachal'),
+            'clear_cache_nonce' => wp_create_nonce('clear_baachal_cache')
+        ));
+    }
+    
     private function add_custom_styles() {
         // Get styling options
-        $primary_color = get_option('chatbot_primary_color', '#007cba');
-        $secondary_color = get_option('chatbot_secondary_color', '#f1f1f1');
-        $border_radius = get_option('chatbot_border_radius', 15);
-        $chat_height = get_option('chatbot_chat_height', 400);
-        $font_size = get_option('chatbot_font_size', 14);
+        $primary_color = get_option('baachal_primary_color', '#007cba');
+        $secondary_color = get_option('baachal_secondary_color', '#f1f1f1');
+        $border_radius = get_option('baachal_border_radius', 15);
+        $chat_height = get_option('baachal_chat_height', 400);
+        $font_size = get_option('baachal_font_size', 14);
         
         // Custom CSS using CSS custom properties
         $custom_css = "
@@ -367,7 +439,7 @@ class Baachal {
     }
     
     public function add_chatbot_html() {
-        $is_enabled = get_option('chatbot_enabled', '1');
+        $is_enabled = get_option('baachal_enabled', '1');
         
         // Allow other plugins to override the enabled state
         $is_enabled = apply_filters('baachal_is_enabled', $is_enabled);
@@ -387,7 +459,7 @@ class Baachal {
     
     public function handle_chatbot_message() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'chatbot_nonce')) {
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
             wp_die('Security check failed');
         }
         
@@ -413,20 +485,20 @@ class Baachal {
             return;
         }
         
-        $api_key = get_option('chatbot_gemini_api_key');
+        $provider = get_option('baachal_ai_provider', 'gemini');
+        $api_key = get_option('baachal_' . $provider . '_api_key');
         
         if (empty($api_key)) {
-            wp_send_json_error('API key not configured');
+            wp_send_json_error('API key not configured for ' . ucfirst($provider));
             return;
         }
         
         // Allow other plugins to modify API parameters
         $api_params = apply_filters('baachal_api_params', array(
-            'message' => $message,
-            'api_key' => $api_key
+            'message' => $message
         ), $_POST);
         
-        $result = $this->call_gemini_api($api_params['message'], $api_params['api_key']);
+        $result = $this->call_ai_api($api_params['message']);
         
         if ($result['success']) {
             // Allow other plugins to modify the response before saving/sending
@@ -458,11 +530,11 @@ class Baachal {
         }
         
         // Create or get session ID for chat
-        if (!isset($_SESSION['chatbot_session_id'])) {
-            $_SESSION['chatbot_session_id'] = 'chat_' . wp_generate_uuid4();
+        if (!isset($_SESSION['baachal_session_id'])) {
+            $_SESSION['baachal_session_id'] = 'chat_' . wp_generate_uuid4();
         }
         
-        return $_SESSION['chatbot_session_id'];
+        return $_SESSION['baachal_session_id'];
     }
     
     private function save_chat_message($message, $type) {
@@ -473,7 +545,7 @@ class Baachal {
             return;
         }
         
-        if (get_option('chatbot_message_persistence', '1') !== '1') {
+        if (get_option('baachal_message_persistence', '1') !== '1') {
             return; // Don't save if persistence is disabled
         }
         
@@ -531,7 +603,7 @@ class Baachal {
     private function get_or_create_conversation($session_id, $user_id = 0) {
         // Look for existing conversation with this session ID
         $existing = get_posts(array(
-            'post_type' => 'chatbot_conversation',
+            'post_type' => 'baachal_conversation',
             'meta_query' => array(
                 array(
                     'key' => '_session_id',
@@ -549,7 +621,7 @@ class Baachal {
         
         // Create new conversation
         $conversation_id = wp_insert_post(array(
-            'post_type' => 'chatbot_conversation',
+            'post_type' => 'baachal_conversation',
             'post_title' => 'Chat Session ' . date('Y-m-d H:i:s'),
             'post_status' => 'publish',
             'post_author' => $user_id ?: 1 // Use user ID or default to admin
@@ -571,7 +643,7 @@ class Baachal {
     
     public function get_chat_history() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'chatbot_nonce')) {
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
             wp_die('Security check failed');
         }
         
@@ -579,7 +651,7 @@ class Baachal {
         
         // Get conversation for this session
         $conversation = get_posts(array(
-            'post_type' => 'chatbot_conversation',
+            'post_type' => 'baachal_conversation',
             'meta_query' => array(
                 array(
                     'key' => '_session_id',
@@ -669,7 +741,7 @@ class Baachal {
     
     public function clear_chat_history() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'chatbot_nonce')) {
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
             wp_die('Security check failed');
         }
         
@@ -677,7 +749,7 @@ class Baachal {
         
         // Get conversation for this session
         $conversation = get_posts(array(
-            'post_type' => 'chatbot_conversation',
+            'post_type' => 'baachal_conversation',
             'meta_query' => array(
                 array(
                     'key' => '_session_id',
@@ -698,12 +770,40 @@ class Baachal {
         }
     }
     
+    private function call_ai_api($message) {
+        $provider = get_option('baachal_ai_provider', 'gemini');
+        $api_key = get_option('baachal_' . $provider . '_api_key', '');
+        
+        if (empty($api_key)) {
+            return array(
+                'success' => false,
+                'error' => 'API key not configured for ' . ucfirst($provider)
+            );
+        }
+        
+        switch ($provider) {
+            case 'gemini':
+                return $this->call_gemini_api($message, $api_key);
+            case 'openai':
+                return $this->call_openai_api($message, $api_key);
+            case 'claude':
+                return $this->call_claude_api($message, $api_key);
+            case 'grok':
+                return $this->call_grok_api($message, $api_key);
+            default:
+                return array(
+                    'success' => false,
+                    'error' => 'Unsupported AI provider: ' . $provider
+                );
+        }
+    }
+
     private function call_gemini_api($message, $api_key) {
         $website_context = $this->get_website_context($message);
         $full_prompt = $website_context . "\n\nUser question: " . $message;
         
         // Get selected model from settings
-        $selected_model = get_option('chatbot_gemini_model', 'gemini-2.0-flash-exp');
+        $selected_model = get_option('baachal_ai_model', 'gemini-2.0-flash-exp');
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $selected_model . ':generateContent?key=' . $api_key;
         
         $data = array(
@@ -794,6 +894,201 @@ class Baachal {
             'error' => $error_message
         );
     }
+
+    private function call_openai_api($message, $api_key) {
+        $website_context = $this->get_website_context($message);
+        $full_prompt = $website_context . "\n\nUser question: " . $message;
+        
+        $selected_model = get_option('baachal_ai_model', 'gpt-5');
+        $url = 'https://api.openai.com/v1/chat/completions';
+        
+        $data = array(
+            'model' => $selected_model,
+            'messages' => array(
+                array(
+                    'role' => 'user',
+                    'content' => $full_prompt
+                )
+            ),
+            'max_tokens' => 1024,
+            'temperature' => 0.7
+        );
+        
+        $args = array(
+            'body' => json_encode($data),
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $api_key
+            ),
+            'timeout' => 30,
+            'user-agent' => 'WordPress/' . get_bloginfo('version') . ' Baachal/1.0.0'
+        );
+        
+        $response = wp_remote_post($url, $args);
+        
+        if (is_wp_error($response)) {
+            return array(
+                'success' => false,
+                'error' => 'Network error: ' . $response->get_error_message()
+            );
+        }
+        
+        $status_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        if ($status_code === 200) {
+            $decoded = json_decode($body, true);
+            
+            if (isset($decoded['choices'][0]['message']['content'])) {
+                return array(
+                    'success' => true,
+                    'data' => $decoded['choices'][0]['message']['content']
+                );
+            }
+        }
+        
+        $error_data = json_decode($body, true);
+        $error_message = 'OpenAI API error (HTTP ' . $status_code . ')';
+        
+        if (isset($error_data['error']['message'])) {
+            $error_message .= ': ' . $error_data['error']['message'];
+        }
+        
+        return array(
+            'success' => false,
+            'error' => $error_message
+        );
+    }
+
+    private function call_claude_api($message, $api_key) {
+        $website_context = $this->get_website_context($message);
+        $full_prompt = $website_context . "\n\nUser question: " . $message;
+        
+        $selected_model = get_option('baachal_ai_model', 'claude-3-5-sonnet-20241022');
+        $url = 'https://api.anthropic.com/v1/messages';
+        
+        $data = array(
+            'model' => $selected_model,
+            'max_tokens' => 1024,
+            'messages' => array(
+                array(
+                    'role' => 'user',
+                    'content' => $full_prompt
+                )
+            )
+        );
+        
+        $args = array(
+            'body' => json_encode($data),
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'x-api-key' => $api_key,
+                'anthropic-version' => '2023-06-01'
+            ),
+            'timeout' => 30,
+            'user-agent' => 'WordPress/' . get_bloginfo('version') . ' Baachal/1.0.0'
+        );
+        
+        $response = wp_remote_post($url, $args);
+        
+        if (is_wp_error($response)) {
+            return array(
+                'success' => false,
+                'error' => 'Network error: ' . $response->get_error_message()
+            );
+        }
+        
+        $status_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        if ($status_code === 200) {
+            $decoded = json_decode($body, true);
+            
+            if (isset($decoded['content'][0]['text'])) {
+                return array(
+                    'success' => true,
+                    'data' => $decoded['content'][0]['text']
+                );
+            }
+        }
+        
+        $error_data = json_decode($body, true);
+        $error_message = 'Claude API error (HTTP ' . $status_code . ')';
+        
+        if (isset($error_data['error']['message'])) {
+            $error_message .= ': ' . $error_data['error']['message'];
+        }
+        
+        return array(
+            'success' => false,
+            'error' => $error_message
+        );
+    }
+
+    private function call_grok_api($message, $api_key) {
+        $website_context = $this->get_website_context($message);
+        $full_prompt = $website_context . "\n\nUser question: " . $message;
+        
+        $selected_model = get_option('baachal_ai_model', 'grok-beta');
+        $url = 'https://api.x.ai/v1/chat/completions';
+        
+        $data = array(
+            'model' => $selected_model,
+            'messages' => array(
+                array(
+                    'role' => 'user',
+                    'content' => $full_prompt
+                )
+            ),
+            'max_tokens' => 1024,
+            'temperature' => 0.7
+        );
+        
+        $args = array(
+            'body' => json_encode($data),
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $api_key
+            ),
+            'timeout' => 30,
+            'user-agent' => 'WordPress/' . get_bloginfo('version') . ' Baachal/1.0.0'
+        );
+        
+        $response = wp_remote_post($url, $args);
+        
+        if (is_wp_error($response)) {
+            return array(
+                'success' => false,
+                'error' => 'Network error: ' . $response->get_error_message()
+            );
+        }
+        
+        $status_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        
+        if ($status_code === 200) {
+            $decoded = json_decode($body, true);
+            
+            if (isset($decoded['choices'][0]['message']['content'])) {
+                return array(
+                    'success' => true,
+                    'data' => $decoded['choices'][0]['message']['content']
+                );
+            }
+        }
+        
+        $error_data = json_decode($body, true);
+        $error_message = 'Grok API error (HTTP ' . $status_code . ')';
+        
+        if (isset($error_data['error']['message'])) {
+            $error_message .= ': ' . $error_data['error']['message'];
+        }
+        
+        return array(
+            'success' => false,
+            'error' => $error_message
+        );
+    }
     
     private function get_website_context($user_message = '') {
         $site_name = get_bloginfo('name');
@@ -805,7 +1100,7 @@ class Baachal {
         $context .= "Website URL: {$site_url}. ";
         
         // Add WooCommerce product information if available and enabled
-        if (class_exists('WooCommerce') && get_option('chatbot_woocommerce_integration', '1') === '1') {
+        if (class_exists('WooCommerce') && get_option('baachal_woocommerce_integration', '1') === '1') {
             $woocommerce_context = $this->get_woocommerce_context($user_message);
             if (!empty($woocommerce_context)) {
                 $context .= $woocommerce_context;
@@ -835,7 +1130,7 @@ class Baachal {
         }
         
         // Debug logging if enabled
-        $debug_mode = get_option('chatbot_debug_mode', '0') === '1';
+        $debug_mode = get_option('baachal_debug_mode', '0') === '1';
         
         // If we have a user message, get relevant products using embeddings
         if (!empty($user_message)) {
@@ -993,10 +1288,10 @@ class Baachal {
         $important_terms = array();
         
         // Get configurable settings with defaults
-        $max_terms = get_option('chatbot_max_terms', 50);
-        $min_term_length = get_option('chatbot_min_term_length', 3);
-        $cache_duration = get_option('chatbot_cache_duration', DAY_IN_SECONDS);
-        $exclude_terms = get_option('chatbot_exclude_terms', array('the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'size', 'color', 'item', 'product'));
+        $max_terms = get_option('baachal_max_terms', 50);
+        $min_term_length = get_option('baachal_min_term_length', 3);
+        $cache_duration = get_option('baachal_cache_duration', DAY_IN_SECONDS);
+        $exclude_terms = get_option('baachal_exclude_terms', array('the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'size', 'color', 'item', 'product'));
         
         // Ensure exclude_terms is an array
         if (!is_array($exclude_terms)) {
@@ -1460,7 +1755,7 @@ class Baachal {
     
     private function get_content_context($user_message = '') {
         // Debug logging if enabled
-        $debug_mode = get_option('chatbot_debug_mode', '0') === '1';
+        $debug_mode = get_option('baachal_debug_mode', '0') === '1';
         
         if (empty($user_message)) {
             return '';
@@ -1572,7 +1867,7 @@ class Baachal {
             'chatbot-conversation-details',
             'Conversation Details',
             array($this, 'render_conversation_meta_box'),
-            'chatbot_conversation',
+            'baachal_conversation',
             'normal',
             'high'
         );
@@ -1581,7 +1876,7 @@ class Baachal {
             'chatbot-conversation-messages',
             'Chat Messages',
             array($this, 'render_messages_meta_box'),
-            'chatbot_conversation',
+            'baachal_conversation',
             'normal',
             'high'
         );
@@ -1695,68 +1990,68 @@ class Baachal {
     }
     
     public function register_settings() {
-        register_setting('chatbot_settings', 'chatbot_gemini_api_key', array(
+        register_setting('baachal_settings', 'baachal_gemini_api_key', array(
             'sanitize_callback' => 'sanitize_text_field'
         ));
-        register_setting('chatbot_settings', 'chatbot_enabled', array(
+        register_setting('baachal_settings', 'baachal_enabled', array(
             'sanitize_callback' => array($this, 'sanitize_checkbox')
         ));
-        register_setting('chatbot_settings', 'chatbot_welcome_message', array(
+        register_setting('baachal_settings', 'baachal_welcome_message', array(
             'sanitize_callback' => 'sanitize_textarea_field'
         ));
-        register_setting('chatbot_settings', 'chatbot_debug_mode', array(
+        register_setting('baachal_settings', 'baachal_debug_mode', array(
             'sanitize_callback' => array($this, 'sanitize_checkbox')
         ));
-        register_setting('chatbot_settings', 'chatbot_gemini_model', array(
+        register_setting('baachal_settings', 'baachal_gemini_model', array(
             'sanitize_callback' => 'sanitize_text_field'
         ));
-        register_setting('chatbot_settings', 'chatbot_woocommerce_integration', array(
+        register_setting('baachal_settings', 'baachal_woocommerce_integration', array(
             'sanitize_callback' => array($this, 'sanitize_checkbox')
         ));
-        register_setting('chatbot_settings', 'chatbot_message_persistence', array(
+        register_setting('baachal_settings', 'baachal_message_persistence', array(
             'sanitize_callback' => array($this, 'sanitize_checkbox')
         ));
-        register_setting('chatbot_settings', 'chatbot_show_clear_history', array(
+        register_setting('baachal_settings', 'baachal_show_clear_history', array(
             'sanitize_callback' => array($this, 'sanitize_checkbox')
         ));
         
         // Product search settings
-        register_setting('chatbot_settings', 'chatbot_max_terms', array(
+        register_setting('baachal_settings', 'baachal_max_terms', array(
             'sanitize_callback' => 'absint'
         ));
-        register_setting('chatbot_settings', 'chatbot_min_term_length', array(
+        register_setting('baachal_settings', 'baachal_min_term_length', array(
             'sanitize_callback' => 'absint'
         ));
-        register_setting('chatbot_settings', 'chatbot_cache_duration', array(
+        register_setting('baachal_settings', 'baachal_cache_duration', array(
             'sanitize_callback' => 'absint'
         ));
-        register_setting('chatbot_settings', 'chatbot_exclude_terms', array(
+        register_setting('baachal_settings', 'baachal_exclude_terms', array(
             'sanitize_callback' => 'sanitize_textarea_field'
         ));
         
         // UI styling settings
-        register_setting('chatbot_settings', 'chatbot_primary_color', array(
+        register_setting('baachal_settings', 'baachal_primary_color', array(
             'sanitize_callback' => 'sanitize_hex_color'
         ));
-        register_setting('chatbot_settings', 'chatbot_secondary_color', array(
+        register_setting('baachal_settings', 'baachal_secondary_color', array(
             'sanitize_callback' => 'sanitize_hex_color'
         ));
-        register_setting('chatbot_settings', 'chatbot_position', array(
+        register_setting('baachal_settings', 'baachal_position', array(
             'sanitize_callback' => 'sanitize_text_field'
         ));
-        register_setting('chatbot_settings', 'chatbot_size', array(
+        register_setting('baachal_settings', 'baachal_size', array(
             'sanitize_callback' => 'sanitize_text_field'
         ));
-        register_setting('chatbot_settings', 'chatbot_border_radius', array(
+        register_setting('baachal_settings', 'baachal_border_radius', array(
             'sanitize_callback' => 'absint'
         ));
-        register_setting('chatbot_settings', 'chatbot_chat_height', array(
+        register_setting('baachal_settings', 'baachal_chat_height', array(
             'sanitize_callback' => 'absint'
         ));
-        register_setting('chatbot_settings', 'chatbot_font_size', array(
+        register_setting('baachal_settings', 'baachal_font_size', array(
             'sanitize_callback' => 'absint'
         ));
-        register_setting('chatbot_settings', 'chatbot_animation_enabled', array(
+        register_setting('baachal_settings', 'baachal_animation_enabled', array(
             'sanitize_callback' => array($this, 'sanitize_checkbox')
         ));
     }

@@ -3,7 +3,7 @@ jQuery(document).ready(function($) {
     let isLoading = false;
     
     // Load saved messages on page load (if persistence is enabled)
-    if (chatbot_ajax.message_persistence === '1') {
+    if (baachal_ajax.message_persistence === '1') {
         loadSavedMessages();
     }
     
@@ -114,12 +114,12 @@ jQuery(document).ready(function($) {
         
         // Send AJAX request
         $.ajax({
-            url: chatbot_ajax.ajax_url,
+            url: baachal_ajax.ajax_url,
             type: 'POST',
             data: {
-                action: 'chatbot_message',
+                action: 'baachal_message',
                 message: finalMessage,
-                nonce: chatbot_ajax.nonce
+                nonce: baachal_ajax.nonce
             },
             success: function(response) {
                 hideLoading();
@@ -144,7 +144,7 @@ jQuery(document).ready(function($) {
                     let errorMessage = 'Sorry, I encountered an error. Please try again.';
                     
                     // Show detailed error in debug mode
-                    if (chatbot_ajax.debug_mode === '1' && response.data) {
+                    if (baachal_ajax.debug_mode === '1' && response.data) {
                         errorMessage = 'Error: ' + response.data;
                     }
                     
@@ -169,7 +169,7 @@ jQuery(document).ready(function($) {
                 let errorMessage = 'Sorry, I\'m having trouble connecting. Please try again later.';
                 
                 // Show detailed error in debug mode
-                if (chatbot_ajax.debug_mode === '1') {
+                if (baachal_ajax.debug_mode === '1') {
                     errorMessage = 'Connection error: ' + error + ' (Status: ' + status + ')';
                 }
                 
@@ -313,17 +313,17 @@ jQuery(document).ready(function($) {
     
     // Message persistence functions (now using database)
     function loadSavedMessages() {
-        if (chatbot_ajax.message_persistence !== '1') {
+        if (baachal_ajax.message_persistence !== '1') {
             return;
         }
         
         $.ajax({
-            url: chatbot_ajax.ajax_url,
+            url: baachal_ajax.ajax_url,
             type: 'POST',
             data: {
-                action: 'get_chat_history',
-                nonce: chatbot_ajax.nonce,
-                session_id: chatbot_ajax.session_id
+                action: 'baachal_get_chat_history',
+                nonce: baachal_ajax.nonce,
+                session_id: baachal_ajax.session_id
             },
             success: function(response) {
                 if (response.success && response.data.length > 0) {
@@ -349,12 +349,12 @@ jQuery(document).ready(function($) {
     
     function clearChatHistory() {
         $.ajax({
-            url: chatbot_ajax.ajax_url,
+            url: baachal_ajax.ajax_url,
             type: 'POST',
             data: {
-                action: 'clear_chat_history',
-                nonce: chatbot_ajax.nonce,
-                session_id: chatbot_ajax.session_id
+                action: 'baachal_clear_chat_history',
+                nonce: baachal_ajax.nonce,
+                session_id: baachal_ajax.session_id
             },
             success: function(response) {
                 if (response.success) {

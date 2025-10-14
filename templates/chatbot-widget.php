@@ -4,14 +4,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$welcome_message = get_option('chatbot_welcome_message', 'Hello! How can I help you today?');
-$show_clear_history = get_option('chatbot_show_clear_history', '1');
-$chatbot_title = get_option('chatbot_title', 'AI Chat Bot');
+$welcome_message = get_option('baachal_welcome_message', 'Hello! How can I help you today?');
+$show_clear_history = get_option('baachal_show_clear_history', '1');
+$chatbot_title = get_option('baachal_title', 'AI Chat Bot');
 
 // Get styling options for CSS classes
-$position = get_option('chatbot_position', 'bottom-right');
-$size = get_option('chatbot_size', 'medium');
-$animation_enabled = get_option('chatbot_animation_enabled', '1');
+$position = get_option('baachal_position', 'bottom-right');
+$size = get_option('baachal_size', 'medium');
+$animation_enabled = get_option('baachal_animation_enabled', '1');
 
 // Allow filtering of widget settings
 $welcome_message = apply_filters('baachal_welcome_message', $welcome_message);
