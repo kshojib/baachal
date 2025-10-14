@@ -1,10 +1,10 @@
 === Baachal AI Chatbot ===
 Contributors: shojibkhan
-Tags: chatbot, ai, gemini, customer support, woocommerce, artificial intelligence, chat widget, automated support
+Tags: chatbot, ai, customer support, woocommerce, chat widget
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 

@@ -33,19 +33,19 @@ if (!defined('ABSPATH')) {
 <table class="form-table">
     <tr>
         <th scope="row">Plugin Version</th>
-        <td><?php echo BAACHAL_VERSION; ?></td>
+        <td><?php echo esc_html(BAACHAL_VERSION); ?></td>
     </tr>
     <tr>
         <th scope="row">WordPress Version</th>
-        <td><?php echo get_bloginfo('version'); ?></td>
+        <td><?php echo esc_html(get_bloginfo('version')); ?></td>
     </tr>
     <tr>
         <th scope="row">PHP Version</th>
-        <td><?php echo PHP_VERSION; ?></td>
+        <td><?php echo esc_html(PHP_VERSION); ?></td>
     </tr>
     <tr>
         <th scope="row">WooCommerce Status</th>
-        <td><?php echo class_exists('WooCommerce') ? '✅ Active (Version: ' . WC()->version . ')' : '❌ Not installed'; ?></td>
+        <td><?php echo class_exists('WooCommerce') ? esc_html('✅ Active (Version: ' . WC()->version . ')') : esc_html('❌ Not installed'); ?></td>
     </tr>
 </table>
 

@@ -47,7 +47,7 @@ do_action('baachal_before_chatbot_widget');
             $chat_icon_content = apply_filters('baachal_chat_icon_content', '
             <img src="' . esc_url($icon_url) . '" alt="Chat" />
             ');
-            echo $chat_icon_content;
+            echo wp_kses_post($chat_icon_content);
             ?>
         </div>
         <div class="toggle-icon close-icon">
@@ -57,7 +57,7 @@ do_action('baachal_before_chatbot_widget');
             $close_icon_content = apply_filters('baachal_close_icon_content', '
             <img src="' . esc_url($close_icon_url) . '" alt="Close" />
             ');
-            echo $close_icon_content;
+            echo wp_kses_post($close_icon_content);
             ?>
         </div>
     </div>
@@ -140,7 +140,7 @@ do_action('baachal_before_chatbot_widget');
                     <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 ');
-                echo $send_button_content;
+                echo wp_kses_post($send_button_content);
                 ?>
             </button>
         </div>
@@ -160,7 +160,7 @@ do_action('baachal_before_chatbot_widget');
                 <span></span>
             </div>
             ');
-            echo $loading_content;
+            echo wp_kses_post($loading_content);
             ?>
         </div>
         

@@ -38,7 +38,7 @@ $indexable_types = get_option('baachal_indexable_post_types', array('post', 'pag
             <?php if ($stats['last_updated']): ?>
             <div>
                 <strong><?php esc_html_e('Last Updated:', 'baachal'); ?></strong><br>
-                <?php echo wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($stats['last_updated'])); ?>
+                <?php echo esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), strtotime($stats['last_updated']))); ?>
             </div>
             <?php endif; ?>
         </div>

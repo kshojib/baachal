@@ -5,6 +5,30 @@ All notable changes to the Baachal AI Chatbot plugin will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-01-15
+
+### 🔧 WordPress Plugin Directory Compliance
+
+- **Security Enhancements**: Added proper input validation and output escaping
+  - Added `isset()` checks for all `$_POST` and `$_GET` variables
+  - Implemented `wp_unslash()` calls before sanitization
+  - Added proper escaping with `esc_html()`, `esc_attr()`, and `wp_kses_post()`
+- **Database Query Optimization**: Improved SQL query preparation
+  - Replaced direct SQL queries with `$wpdb->prepare()` statements
+  - Fixed interpolated variables in database queries
+- **Code Quality Improvements**:
+  - Replaced `date()` function with `gmdate()` for timezone safety
+  - Wrapped `error_log()` statements in debug mode checks
+  - Reduced plugin tags to WordPress.org limit of 5
+- **Plugin Description Optimization**: Shortened verbose descriptions for better readability
+
+### ✅ Validation Fixes
+
+- Fixed all WordPress coding standards violations
+- Resolved security check failures in AJAX handlers
+- Improved nonce verification throughout the plugin
+- Enhanced input sanitization and validation
+
 ## [1.0.0] - 2025-01-15
 
 ### 🚀 Major Features Added

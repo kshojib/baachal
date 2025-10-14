@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     <div class="notice notice-info inline" style="margin: 15px 0;">
         <p><strong>WooCommerce Detected!</strong> The chatbot can now help customers find products from your store. <?php 
         $product_count = wp_count_posts('product')->publish;
-        echo "Found {$product_count} published products.";
+        echo esc_html("Found {$product_count} published products.");
         ?></p>
     </div>
 <?php else: ?>

@@ -3,7 +3,7 @@
  * Plugin Name: Baachal AI Chatbot
  * Plugin URI: https://github.com/kshojib/baachal
  * Description: AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok). Intelligent customer support with automatic content indexing and WooCommerce integration.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 5.0
  * Tested up to: 6.8
  * Requires PHP: 7.4
@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('BAACHAL_VERSION', '1.0.0');
+define('BAACHAL_VERSION', '1.0.1');
 define('BAACHAL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('BAACHAL_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -459,11 +459,15 @@ class Baachal {
     
     public function handle_chatbot_message() {
         // Verify nonce
-        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
             wp_die('Security check failed');
         }
         
-        $message = sanitize_text_field($_POST['message']);
+        if (!isset($_POST['message'])) {
+            wp_die('Message is required');
+        }
+        
+        $message = sanitize_text_field(wp_unslash($_POST['message']));
         
         // Allow other plugins to modify the user message before processing
         $message = apply_filters('baachal_before_process_message', $message, $_POST);
@@ -622,7 +626,7 @@ class Baachal {
         // Create new conversation
         $conversation_id = wp_insert_post(array(
             'post_type' => 'baachal_conversation',
-            'post_title' => 'Chat Session ' . date('Y-m-d H:i:s'),
+            'post_title' => 'Chat Session ' . gmdate('Y-m-d H:i:s'),
             'post_status' => 'publish',
             'post_author' => $user_id ?: 1 // Use user ID or default to admin
         ));
@@ -631,8 +635,8 @@ class Baachal {
             // Store session metadata
             update_post_meta($conversation_id, '_session_id', $session_id);
             update_post_meta($conversation_id, '_user_id', $user_id);
-            update_post_meta($conversation_id, '_user_ip', $_SERVER['REMOTE_ADDR']);
-            update_post_meta($conversation_id, '_user_agent', $_SERVER['HTTP_USER_AGENT']);
+            update_post_meta($conversation_id, '_user_ip', isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '');
+            update_post_meta($conversation_id, '_user_agent', isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '');
             update_post_meta($conversation_id, '_chat_messages', array());
             
             return $conversation_id;
@@ -643,11 +647,15 @@ class Baachal {
     
     public function get_chat_history() {
         // Verify nonce
-        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
             wp_die('Security check failed');
         }
         
-        $session_id = sanitize_text_field($_POST['session_id']);
+        if (!isset($_POST['session_id'])) {
+            wp_die('Session ID is required');
+        }
+        
+        $session_id = sanitize_text_field(wp_unslash($_POST['session_id']));
         
         // Get conversation for this session
         $conversation = get_posts(array(
@@ -676,7 +684,7 @@ class Baachal {
     
     public function handle_clear_cache_ajax() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'clear_baachal_cache')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'clear_baachal_cache')) {
             wp_send_json_error('Security check failed');
             return;
         }
@@ -695,7 +703,7 @@ class Baachal {
     
     public function handle_test_content_search() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'baachal_test_search')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_test_search')) {
             wp_send_json_error('Security check failed');
             return;
         }
@@ -706,7 +714,12 @@ class Baachal {
             return;
         }
         
-        $query = sanitize_text_field($_POST['query']);
+        if (!isset($_POST['query'])) {
+            wp_send_json_error('Query is required');
+            return;
+        }
+        
+        $query = sanitize_text_field(wp_unslash($_POST['query']));
         if (empty($query)) {
             wp_send_json_error('Query is required');
             return;
@@ -721,7 +734,7 @@ class Baachal {
     
     public function handle_reindex_content_ajax() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'baachal_reindex_content')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_reindex_content')) {
             wp_send_json_error('Security check failed');
             return;
         }
@@ -741,11 +754,15 @@ class Baachal {
     
     public function clear_chat_history() {
         // Verify nonce
-        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'baachal_nonce')) {
             wp_die('Security check failed');
         }
         
-        $session_id = sanitize_text_field($_POST['session_id']);
+        if (!isset($_POST['session_id'])) {
+            wp_die('Session ID is required');
+        }
+        
+        $session_id = sanitize_text_field(wp_unslash($_POST['session_id']));
         
         // Get conversation for this session
         $conversation = get_posts(array(
@@ -1512,18 +1529,24 @@ class Baachal {
             return array();
         }
         
-        // Create a weighted search query
+        // Create placeholders for prepared statements
         $title_conditions = array();
         $content_conditions = array();
+        $values = array();
         
         foreach ($keywords as $keyword) {
-            $keyword = $wpdb->esc_like($keyword);
-            $title_conditions[] = "post_title LIKE '%{$keyword}%'";
-            $content_conditions[] = "post_content LIKE '%{$keyword}%'";
+            $like_keyword = '%' . $wpdb->esc_like($keyword) . '%';
+            $title_conditions[] = "post_title LIKE %s";
+            $content_conditions[] = "post_content LIKE %s";
+            $values[] = $like_keyword;
+            $values[] = $like_keyword;
         }
         
         $title_sql = implode(' OR ', $title_conditions);
         $content_sql = implode(' OR ', $content_conditions);
+        
+        // Add limit to values array
+        $values[] = $limit;
         
         // Weighted scoring: title matches worth more than content matches
         $sql = "
@@ -1535,10 +1558,11 @@ class Baachal {
             AND p.post_status = 'publish'
             AND (({$title_sql}) OR ({$content_sql}))
             ORDER BY relevance_score DESC, p.post_date DESC
-            LIMIT {$limit}
+            LIMIT %d
         ";
         
-        $results = $wpdb->get_results($sql);
+        $prepared_sql = $wpdb->prepare($sql, $values);
+        $results = $wpdb->get_results($prepared_sql);
         $products = array();
         
         foreach ($results as $result) {
@@ -1560,9 +1584,12 @@ class Baachal {
         
         // Search in product attributes (like color, material, etc.)
         $attribute_conditions = array();
+        $values = array();
+        
         foreach ($keywords as $keyword) {
-            $keyword = $wpdb->esc_like($keyword);
-            $attribute_conditions[] = "meta_value LIKE '%{$keyword}%'";
+            $like_keyword = '%' . $wpdb->esc_like($keyword) . '%';
+            $attribute_conditions[] = "meta_value LIKE %s";
+            $values[] = $like_keyword;
         }
         
         if (empty($attribute_conditions)) {
@@ -1570,6 +1597,9 @@ class Baachal {
         }
         
         $conditions_sql = implode(' OR ', $attribute_conditions);
+        
+        // Add limit to values
+        $values[] = $limit;
         
         $sql = "
             SELECT DISTINCT p.ID, p.post_title
@@ -1580,10 +1610,11 @@ class Baachal {
             AND pm.meta_key LIKE 'attribute_%'
             AND ({$conditions_sql})
             ORDER BY p.post_date DESC
-            LIMIT {$limit}
+            LIMIT %d
         ";
         
-        $results = $wpdb->get_results($sql);
+        $prepared_sql = $wpdb->prepare($sql, $values);
+        $results = $wpdb->get_results($prepared_sql);
         $products = array();
         
         foreach ($results as $result) {
@@ -1857,7 +1888,7 @@ class Baachal {
     }
     
     public function add_settings_link($links) {
-        $settings_link = '<a href="' . admin_url('options-general.php?page=baachal') . '">' . __('Settings') . '</a>';
+        $settings_link = '<a href="' . admin_url('options-general.php?page=baachal') . '">' . __('Settings', 'baachal') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -1929,7 +1960,7 @@ class Baachal {
             $bg_color = ($type === 'user') ? '#e3f2fd' : '#f3e5f5';
             $label = ($type === 'user') ? 'User' : 'Baachal AI bot';
             
-            echo '<div style="margin-bottom: 15px; padding: 10px; background: ' . $bg_color . '; border-radius: 5px;">';
+            echo '<div style="margin-bottom: 15px; padding: 10px; background: ' . esc_attr($bg_color) . '; border-radius: 5px;">';
             echo '<div style="font-weight: bold; margin-bottom: 5px; color: #333;">';
             echo esc_html($label) . ' <span style="font-weight: normal; color: #666; font-size: 12px;">(' . esc_html($timestamp) . ')</span>';
             echo '</div>';
@@ -1961,7 +1992,7 @@ class Baachal {
     
     public function save_content_indexing_meta($post_id) {
         // Check if our nonce is set and verify it
-        if (!isset($_POST['baachal_content_indexing_nonce']) || !wp_verify_nonce($_POST['baachal_content_indexing_nonce'], 'baachal_content_indexing')) {
+        if (!isset($_POST['baachal_content_indexing_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['baachal_content_indexing_nonce'])), 'baachal_content_indexing')) {
             return;
         }
         
