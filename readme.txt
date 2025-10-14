@@ -8,42 +8,33 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Intelligent AI chatbot powered by Google Gemini API with deep website knowledge, automatic content indexing, and WooCommerce integration.
+Intelligent AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok) and automatic content indexing.
 
 == Description ==
 
-**Baachal AI Chatbot** transforms your website into an intelligent customer support powerhouse. Powered by Google's advanced Gemini AI, this plugin provides instant, accurate responses about your products, services, and content.
+**Baachal AI Chatbot** provides intelligent customer support powered by leading AI providers (Google Gemini, OpenAI, Anthropic Claude, xAI Grok). Get instant, accurate responses about your products and content.
 
 ### 🚀 Key Features
 
-**🧠 Intelligent Content Understanding**
-* Automatically indexes your entire website content (posts, pages, FAQs, custom post types)
-* Provides contextual answers based on your actual content
-* Smart search with relevance scoring and fallback mechanisms
+**� Multi-AI Provider Support**
+* Google Gemini, OpenAI ChatGPT, Anthropic Claude, xAI Grok
+* Choose the best AI model for your needs
+* Automatic failover and model switching
+
+**📚 Smart Content Understanding**
+* Automatic website content indexing
+* Contextual responses based on your actual content
+* Real-time content synchronization
 
 **🛒 WooCommerce Integration**
-* Deep product knowledge and recommendations
-* Inventory status awareness
-* Product attribute understanding (colors, sizes, materials)
-* Smart product search with embedding-based matching
+* Product recommendations and inventory awareness
+* Smart product search and filtering
+* Seamless e-commerce support
 
-**🎨 Customizable Design**
-* Responsive chat widget with multiple positioning options
-* Customizable colors, sizes, and animations
-* Professional header design with online status indicator
-* Mobile-optimized interface
-
-**⚡ Performance Optimized**
-* Intelligent caching system
-* Minimal database queries
-* Lightweight frontend assets
-* Fast response times
-
-**🔧 Easy Administration**
-* Intuitive settings interface with tabbed organization
-* Content indexing management
-* Real-time search testing
-* Comprehensive statistics dashboard
+**🎨 Customizable & Responsive**
+* Modern color picker with preset palettes
+* Mobile-optimized chat widget
+* Multiple positioning and styling options
 
 ### 🎯 Perfect For
 

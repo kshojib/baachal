@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Baachal AI Chatbot
  * Plugin URI: https://github.com/kshojib/baachal
- * Description: Intelligent AI chatbot with multi-provider support (Google Gemini, OpenAI ChatGPT, Anthropic Claude, xAI Grok). Provides customer support with deep knowledge of your website content, products, and services. Features automatic content indexing, customizable styling, and seamless WooCommerce integration.
+ * Description: AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok). Intelligent customer support with automatic content indexing and WooCommerce integration.
  * Version: 1.0.0
  * Requires at least: 5.0
  * Tested up to: 6.8
