@@ -8,19 +8,84 @@ if (!defined('ABSPATH')) {
 if (isset($_POST['submit'])) {
     check_admin_referer('baachal_settings');
     
-    // Allow other plugins to modify settings before saving
-    do_action('baachal_before_save_settings', $_POST);
+    // Sanitize $_POST data before passing to action hooks
+    $sanitized_post = array();
+    foreach ($_POST as $key => $value) {
+        if (is_array($value)) {
+            $sanitized_post[$key] = array_map('sanitize_text_field', $value);
+        } else {
+            $sanitized_post[$key] = sanitize_text_field(wp_unslash($value));
+        }
+    }
     
-    // General Settings
-    update_option('baachal_ai_provider', isset($_POST['baachal_ai_provider']) ? sanitize_text_field(wp_unslash($_POST['baachal_ai_provider'])) : 'gemini');
-    update_option('baachal_gemini_api_key', isset($_POST['baachal_gemini_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_gemini_api_key'])) : '');
-    update_option('baachal_openai_api_key', isset($_POST['baachal_openai_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_openai_api_key'])) : '');
-    update_option('baachal_claude_api_key', isset($_POST['baachal_claude_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_claude_api_key'])) : '');
-    update_option('baachal_grok_api_key', isset($_POST['baachal_grok_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_grok_api_key'])) : '');
+    // Allow other plugins to modify settings before saving (pass only relevant data)
+    $relevant_settings = array(
+        'ai_provider' => $ai_provider,
+        'enabled' => isset($_POST['baachal_enabled']),
+        'debug_mode' => isset($_POST['baachal_debug_mode'])
+    );
+    do_action('baachal_before_save_settings', $relevant_settings);
+    
+    // General Settings with validation
+    $ai_provider = isset($_POST['baachal_ai_provider']) ? sanitize_text_field(wp_unslash($_POST['baachal_ai_provider'])) : 'gemini';
+    $valid_providers = array('gemini', 'openai', 'claude', 'grok');
+    if (!in_array($ai_provider, $valid_providers, true)) {
+        $ai_provider = 'gemini';
+    }
+    update_option('baachal_ai_provider', $ai_provider);
+    
+    // API Keys validation
+    $gemini_api_key = isset($_POST['baachal_gemini_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_gemini_api_key'])) : '';
+    if (!empty($gemini_api_key) && !preg_match('/^[A-Za-z0-9_-]+$/', $gemini_api_key)) {
+        echo '<div class="notice notice-error"><p>Invalid Gemini API key format</p></div>';
+        $gemini_api_key = '';
+    }
+    update_option('baachal_gemini_api_key', $gemini_api_key);
+    
+    $openai_api_key = isset($_POST['baachal_openai_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_openai_api_key'])) : '';
+    if (!empty($openai_api_key) && !preg_match('/^sk-[A-Za-z0-9_-]+$/', $openai_api_key)) {
+        echo '<div class="notice notice-error"><p>Invalid OpenAI API key format</p></div>';
+        $openai_api_key = '';
+    }
+    update_option('baachal_openai_api_key', $openai_api_key);
+    
+    $claude_api_key = isset($_POST['baachal_claude_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_claude_api_key'])) : '';
+    if (!empty($claude_api_key) && !preg_match('/^sk-ant-[A-Za-z0-9_-]+$/', $claude_api_key)) {
+        echo '<div class="notice notice-error"><p>Invalid Claude API key format</p></div>';
+        $claude_api_key = '';
+    }
+    update_option('baachal_claude_api_key', $claude_api_key);
+    
+    $grok_api_key = isset($_POST['baachal_grok_api_key']) ? sanitize_text_field(wp_unslash($_POST['baachal_grok_api_key'])) : '';
+    if (!empty($grok_api_key) && !preg_match('/^[A-Za-z0-9_-]+$/', $grok_api_key)) {
+        echo '<div class="notice notice-error"><p>Invalid Grok API key format</p></div>';
+        $grok_api_key = '';
+    }
+    update_option('baachal_grok_api_key', $grok_api_key);
+    
     update_option('baachal_enabled', isset($_POST['baachal_enabled']) ? '1' : '0');
-    update_option('baachal_title', isset($_POST['baachal_title']) ? sanitize_text_field(wp_unslash($_POST['baachal_title'])) : 'AI Chat Bot');
-    update_option('baachal_welcome_message', isset($_POST['baachal_welcome_message']) ? sanitize_textarea_field(wp_unslash($_POST['baachal_welcome_message'])) : 'Hello! How can I help you today?');
-    update_option('baachal_ai_model', isset($_POST['baachal_ai_model']) ? sanitize_text_field(wp_unslash($_POST['baachal_ai_model'])) : 'gemini-2.0-flash-exp');
+    
+    // Validate title length
+    $title = isset($_POST['baachal_title']) ? sanitize_text_field(wp_unslash($_POST['baachal_title'])) : 'AI Chat Bot';
+    if (strlen($title) > 100) {
+        $title = substr($title, 0, 100);
+    }
+    update_option('baachal_title', $title);
+    
+    // Validate welcome message length
+    $welcome_message = isset($_POST['baachal_welcome_message']) ? sanitize_textarea_field(wp_unslash($_POST['baachal_welcome_message'])) : 'Hello! How can I help you today?';
+    if (strlen($welcome_message) > 500) {
+        $welcome_message = substr($welcome_message, 0, 500);
+    }
+    update_option('baachal_welcome_message', $welcome_message);
+    
+    // Validate AI model
+    $ai_model = isset($_POST['baachal_ai_model']) ? sanitize_text_field(wp_unslash($_POST['baachal_ai_model'])) : 'gemini-2.0-flash-exp';
+    if (!preg_match('/^[a-zA-Z0-9\.-]+$/', $ai_model)) {
+        $ai_model = 'gemini-2.0-flash-exp';
+    }
+    update_option('baachal_ai_model', $ai_model);
+    
     update_option('baachal_debug_mode', isset($_POST['baachal_debug_mode']) ? '1' : '0');
     
     // WooCommerce Settings
@@ -28,15 +93,21 @@ if (isset($_POST['submit'])) {
     update_option('baachal_message_persistence', isset($_POST['baachal_message_persistence']) ? '1' : '0');
     update_option('baachal_show_clear_history', isset($_POST['baachal_show_clear_history']) ? '1' : '0');
     
-    // Product Search Settings
+    // Product Search Settings with validation
     if (isset($_POST['baachal_max_terms'])) {
-        update_option('baachal_max_terms', intval($_POST['baachal_max_terms']));
+        $max_terms = intval($_POST['baachal_max_terms']);
+        $max_terms = max(1, min(50, $max_terms)); // Ensure between 1-50
+        update_option('baachal_max_terms', $max_terms);
     }
     if (isset($_POST['baachal_min_term_length'])) {
-        update_option('baachal_min_term_length', intval($_POST['baachal_min_term_length']));
+        $min_term_length = intval($_POST['baachal_min_term_length']);
+        $min_term_length = max(1, min(10, $min_term_length)); // Ensure between 1-10
+        update_option('baachal_min_term_length', $min_term_length);
     }
     if (isset($_POST['baachal_cache_duration'])) {
-        update_option('baachal_cache_duration', intval($_POST['baachal_cache_duration']));
+        $cache_duration = intval($_POST['baachal_cache_duration']);
+        $cache_duration = max(60, min(86400, $cache_duration)); // Ensure between 1 minute - 24 hours
+        update_option('baachal_cache_duration', $cache_duration);
     }
     
     // Handle exclude terms as comma-separated values
@@ -80,7 +151,7 @@ if (isset($_POST['submit'])) {
     update_option('baachal_preserve_data_on_uninstall', isset($_POST['baachal_preserve_data_on_uninstall']) ? '1' : '0');
     
     if (isset($_POST['baachal_indexable_post_types']) && is_array($_POST['baachal_indexable_post_types'])) {
-        $indexable_types = array_map('sanitize_text_field', array_map('wp_unslash', $_POST['baachal_indexable_post_types']));
+        $indexable_types = array_map('sanitize_text_field', wp_unslash($_POST['baachal_indexable_post_types']));
         update_option('baachal_indexable_post_types', $indexable_types);
     } else {
         update_option('baachal_indexable_post_types', array());
@@ -95,8 +166,22 @@ if (isset($_POST['submit'])) {
     // Clear dynamic terms cache when settings change
     delete_transient('baachal_dynamic_terms');
     
-    // Allow other plugins to save additional settings
-    do_action('baachal_save_additional_settings', $_POST);
+    // Allow other plugins to save additional settings (pass only non-core settings)
+    $additional_settings = array();
+    foreach ($_POST as $key => $value) {
+        // Only pass non-core baachal settings that other plugins might need
+        if (strpos($key, 'baachal_') === 0 && !in_array($key, array(
+            'baachal_ai_provider', 'baachal_enabled', 'baachal_debug_mode', 
+            'baachal_gemini_api_key', 'baachal_openai_api_key', 'baachal_claude_api_key', 'baachal_grok_api_key'
+        ), true)) {
+            if (is_array($value)) {
+                $additional_settings[$key] = array_map('sanitize_text_field', array_map('wp_unslash', $value));
+            } else {
+                $additional_settings[$key] = sanitize_text_field(wp_unslash($value));
+            }
+        }
+    }
+    do_action('baachal_save_additional_settings', $additional_settings);
     
     echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
 }

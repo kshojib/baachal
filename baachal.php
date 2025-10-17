@@ -171,7 +171,8 @@ class Baachal {
             
             // Delete content index table
             $index_table = $wpdb->prefix . 'baachal_content_index';
-            $wpdb->query("DROP TABLE IF EXISTS {$index_table}");
+            $escaped_table = '`' . esc_sql($index_table) . '`';
+            $wpdb->query("DROP TABLE IF EXISTS " . $escaped_table); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.SchemaChange
             
             // Delete all conversations
             $conversations = get_posts(array(
@@ -469,11 +470,27 @@ class Baachal {
         
         $message = sanitize_text_field(wp_unslash($_POST['message']));
         
+        // Validate message
+        if (empty(trim($message))) {
+            wp_send_json_error('Message cannot be empty');
+            return;
+        }
+        
+        if (strlen($message) > 1000) {
+            wp_send_json_error('Message is too long (maximum 1000 characters)');
+            return;
+        }
+        
         // Allow other plugins to modify the user message before processing
-        $message = apply_filters('baachal_before_process_message', $message, $_POST);
+        // Only pass relevant context data instead of entire $_POST
+        $message_context = array(
+            'nonce' => isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '',
+            'original_message' => $message
+        );
+        $message = apply_filters('baachal_before_process_message', $message, $message_context);
         
         // Allow other plugins to handle the message entirely
-        $custom_response = apply_filters('baachal_custom_message_handler', null, $message, $_POST);
+        $custom_response = apply_filters('baachal_custom_message_handler', null, $message, $message_context);
         
         if ($custom_response !== null) {
             // Custom handler provided a response
@@ -498,9 +515,14 @@ class Baachal {
         }
         
         // Allow other plugins to modify API parameters
+        // Only pass the API parameters and essential context
+        $api_context = array(
+            'provider' => $provider,
+            'message_length' => strlen($message)
+        );
         $api_params = apply_filters('baachal_api_params', array(
             'message' => $message
-        ), $_POST);
+        ), $api_context);
         
         $result = $this->call_ai_api($api_params['message']);
         
@@ -538,7 +560,7 @@ class Baachal {
             $_SESSION['baachal_session_id'] = 'chat_' . wp_generate_uuid4();
         }
         
-        return $_SESSION['baachal_session_id'];
+        return sanitize_text_field($_SESSION['baachal_session_id']);
     }
     
     private function save_chat_message($message, $type) {
@@ -657,6 +679,12 @@ class Baachal {
         
         $session_id = sanitize_text_field(wp_unslash($_POST['session_id']));
         
+        // Validate session ID format
+        if (empty($session_id) || !preg_match('/^chat_[a-f0-9\-]{36}$/', $session_id)) {
+            wp_send_json_error('Invalid session ID format');
+            return;
+        }
+        
         // Get conversation for this session
         $conversation = get_posts(array(
             'post_type' => 'baachal_conversation',
@@ -763,6 +791,12 @@ class Baachal {
         }
         
         $session_id = sanitize_text_field(wp_unslash($_POST['session_id']));
+        
+        // Validate session ID format
+        if (empty($session_id) || !preg_match('/^chat_[a-f0-9\-]{36}$/', $session_id)) {
+            wp_send_json_error('Invalid session ID format');
+            return;
+        }
         
         // Get conversation for this session
         $conversation = get_posts(array(
@@ -1151,20 +1185,20 @@ class Baachal {
         
         // If we have a user message, get relevant products using embeddings
         if (!empty($user_message)) {
-            if ($debug_mode) {
-                error_log('Baachal: Searching for products with message: ' . $user_message);
+            if ($debug_mode && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Baachal: Searching for products with message: ' . $user_message); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             }
             
             $relevant_products = $this->get_relevant_products($user_message);
             if (!empty($relevant_products)) {
-                if ($debug_mode) {
+                if ($debug_mode && defined('WP_DEBUG') && WP_DEBUG) {
                     $product_titles = array_map(function($p) { return $p->post_title; }, $relevant_products);
-                    error_log('Baachal: Found products: ' . implode(', ', $product_titles));
+                    error_log('Baachal: Found products: ' . implode(', ', $product_titles)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
                 }
                 return $this->format_products_context($relevant_products);
             } else {
-                if ($debug_mode) {
-                    error_log('Baachal: No relevant products found for: ' . $user_message);
+                if ($debug_mode && defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('Baachal: No relevant products found for: ' . $user_message); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
                 }
             }
         }
@@ -1534,35 +1568,48 @@ class Baachal {
         $content_conditions = array();
         $values = array();
         
+        // Build separate arrays for title and content values
+        $title_values = array();
+        $content_values = array();
+        
         foreach ($keywords as $keyword) {
             $like_keyword = '%' . $wpdb->esc_like($keyword) . '%';
             $title_conditions[] = "post_title LIKE %s";
             $content_conditions[] = "post_content LIKE %s";
-            $values[] = $like_keyword;
-            $values[] = $like_keyword;
+            $title_values[] = $like_keyword;
+            $content_values[] = $like_keyword;
         }
         
         $title_sql = implode(' OR ', $title_conditions);
         $content_sql = implode(' OR ', $content_conditions);
         
-        // Add limit to values array
-        $values[] = $limit;
+        // Prepare each part separately and then combine
+        $title_prepared = '';
+        $content_prepared = '';
         
-        // Weighted scoring: title matches worth more than content matches
+        if (!empty($title_values)) {
+            $title_prepared = $wpdb->prepare($title_sql, $title_values);
+        }
+        
+        if (!empty($content_values)) {
+            $content_prepared = $wpdb->prepare($content_sql, $content_values);
+        }
+        
+        // Build the final query without double preparation
+        $limit_prepared = intval($limit);
         $sql = "
             SELECT p.ID, p.post_title,
-                   (CASE WHEN ({$title_sql}) THEN 2 ELSE 0 END) +
-                   (CASE WHEN ({$content_sql}) THEN 1 ELSE 0 END) as relevance_score
+                   (CASE WHEN ({$title_prepared}) THEN 2 ELSE 0 END) +
+                   (CASE WHEN ({$content_prepared}) THEN 1 ELSE 0 END) as relevance_score
             FROM {$wpdb->posts} p
             WHERE p.post_type = 'product'
             AND p.post_status = 'publish'
-            AND (({$title_sql}) OR ({$content_sql}))
+            AND (({$title_prepared}) OR ({$content_prepared}))
             ORDER BY relevance_score DESC, p.post_date DESC
-            LIMIT %d
-        ";
+            LIMIT {$limit_prepared}
+        "; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         
-        $prepared_sql = $wpdb->prepare($sql, $values);
-        $results = $wpdb->get_results($prepared_sql);
+        $results = $wpdb->get_results($sql);
         $products = array();
         
         foreach ($results as $result) {
@@ -1586,10 +1633,12 @@ class Baachal {
         $attribute_conditions = array();
         $values = array();
         
+        $condition_values = array();
+        
         foreach ($keywords as $keyword) {
             $like_keyword = '%' . $wpdb->esc_like($keyword) . '%';
             $attribute_conditions[] = "meta_value LIKE %s";
-            $values[] = $like_keyword;
+            $condition_values[] = $like_keyword;
         }
         
         if (empty($attribute_conditions)) {
@@ -1598,23 +1647,22 @@ class Baachal {
         
         $conditions_sql = implode(' OR ', $attribute_conditions);
         
-        // Add limit to values
-        $values[] = $limit;
+        // Prepare the conditions separately
+        $prepared_conditions = $wpdb->prepare($conditions_sql, $condition_values);
         
-        $sql = "
+        $sql = $wpdb->prepare("
             SELECT DISTINCT p.ID, p.post_title
             FROM {$wpdb->posts} p
             INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
             WHERE p.post_type IN ('product', 'product_variation')
             AND p.post_status = 'publish'
             AND pm.meta_key LIKE 'attribute_%'
-            AND ({$conditions_sql})
+            AND ({$prepared_conditions})
             ORDER BY p.post_date DESC
             LIMIT %d
-        ";
+        ", $limit);
         
-        $prepared_sql = $wpdb->prepare($sql, $values);
-        $results = $wpdb->get_results($prepared_sql);
+        $results = $wpdb->get_results($sql);
         $products = array();
         
         foreach ($results as $result) {
@@ -1802,15 +1850,15 @@ class Baachal {
         $relevant_content = $indexer->search_content($user_message, $max_results);
         
         if (empty($relevant_content)) {
-            if ($debug_mode) {
-                error_log('Baachal: No relevant content found for: ' . $user_message);
+            if ($debug_mode && defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('Baachal: No relevant content found for: ' . $user_message); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             }
             return '';
         }
         
-        if ($debug_mode) {
+        if ($debug_mode && defined('WP_DEBUG') && WP_DEBUG) {
             $content_titles = array_map(function($c) { return $c['title']; }, $relevant_content);
-            error_log('Baachal: Found content: ' . implode(', ', $content_titles));
+            error_log('Baachal: Found content: ' . implode(', ', $content_titles)); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
         }
         
         return $this->format_content_context($relevant_content);

@@ -1,5 +1,5 @@
 === Baachal AI Chatbot ===
-Contributors: shojibkhan
+Contributors: webdevshojib
 Tags: chatbot, ai, customer support, woocommerce, chat widget
 Requires at least: 5.0
 Tested up to: 6.8
@@ -72,6 +72,49 @@ Intelligent AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok
 4. Index your content in the "Content Indexing" tab
 5. Customize the appearance in "UI Styling"
 6. Your intelligent chatbot is ready!
+
+== External Services ==
+
+This plugin connects to external AI service APIs to process chat messages and provide intelligent responses. Here are the external services used:
+
+**Google Gemini AI API**
+* Service: Google's Gemini AI language model (https://ai.google.dev/)
+* Purpose: Process user chat messages and generate intelligent responses based on your website content
+* Data sent: User messages, website content (as context), and configuration parameters
+* When: Every time a user sends a message through the chatbot when Gemini is selected as the AI provider
+* Privacy Policy: https://policies.google.com/privacy
+* Terms of Service: https://ai.google.dev/gemini-api/terms
+
+**OpenAI API**
+* Service: OpenAI's ChatGPT language models (https://openai.com/)
+* Purpose: Process user chat messages and generate intelligent responses based on your website content
+* Data sent: User messages, website content (as context), and model parameters
+* When: Every time a user sends a message through the chatbot when OpenAI is selected as the AI provider
+* Privacy Policy: https://openai.com/privacy/
+* Terms of Service: https://openai.com/terms/
+
+**Anthropic Claude API**
+* Service: Anthropic's Claude AI language model (https://www.anthropic.com/)
+* Purpose: Process user chat messages and generate intelligent responses based on your website content
+* Data sent: User messages, website content (as context), and model parameters
+* When: Every time a user sends a message through the chatbot when Claude is selected as the AI provider
+* Privacy Policy: https://www.anthropic.com/privacy
+* Terms of Service: https://www.anthropic.com/terms
+
+**xAI Grok API**
+* Service: xAI's Grok language model (https://x.ai/)
+* Purpose: Process user chat messages and generate intelligent responses based on your website content
+* Data sent: User messages, website content (as context), and model parameters
+* When: Every time a user sends a message through the chatbot when Grok is selected as the AI provider
+* Privacy Policy: https://x.ai/privacy
+* Terms of Service: https://x.ai/terms
+
+**Important Notes:**
+* You must provide your own API keys for any service you wish to use
+* No personal data is stored by these external services beyond the duration of the API call
+* Your website content may be sent as context to help the AI provide relevant responses
+* All API communications are secured via HTTPS
+* You can choose which AI provider to use in the plugin settings
 
 == Installation ==
 
