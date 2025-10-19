@@ -106,8 +106,8 @@ class Baachal {
         if ($post && $post->post_type === 'product') {
             // Clear all product search cache
             global $wpdb;
-            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_baachal_products_%'");
-            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_baachal_products_%'");
+            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", '_transient_baachal_products_%'));
+            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", '_transient_timeout_baachal_products_%'));
             
             // Clear dynamic terms cache as product catalog has changed
             delete_transient('baachal_dynamic_terms');
@@ -167,7 +167,7 @@ class Baachal {
             global $wpdb;
             
             // Delete all plugin options
-            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE 'baachal_%' OR option_name LIKE 'baachal_%'");
+            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", 'baachal_%'));
             
             // Delete content index table
             $index_table = $wpdb->prefix . 'baachal_content_index';
@@ -186,7 +186,7 @@ class Baachal {
             }
             
             // Clear all transients
-            $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_baachal_%' OR option_name LIKE '_transient_timeout_baachal_%'");
+            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s", '_transient_baachal_%', '_transient_timeout_baachal_%'));
             
             // Allow other plugins to perform cleanup
             do_action('baachal_plugin_uninstalled');
@@ -265,8 +265,8 @@ class Baachal {
         global $wpdb;
         
         // Clear all Baachal-related transients
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_baachal_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_baachal_%'");
+        $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", '_transient_baachal_%'));
+        $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", '_transient_timeout_baachal_%'));
         
         // Clear dynamic terms cache
         delete_transient('baachal_dynamic_terms');
@@ -1428,13 +1428,13 @@ class Baachal {
         $terms = array();
         
         // Get all product attributes
-        $attributes = $wpdb->get_results("
+        $attributes = $wpdb->get_results($wpdb->prepare("
             SELECT DISTINCT meta_key, meta_value 
             FROM {$wpdb->postmeta} 
-            WHERE meta_key LIKE 'attribute_%' 
-            AND meta_value != ''
-            LIMIT 200
-        ");
+            WHERE meta_key LIKE %s
+            AND meta_value != %s
+            LIMIT %d
+        ", 'attribute_%', '', 200));
         
         foreach ($attributes as $attr) {
             // Clean attribute name
@@ -1570,19 +1570,16 @@ class Baachal {
             return array();
         }
         
-        // Create placeholders for prepared statements
+        // Create placeholders and collect values separately for title and content
         $title_conditions = array();
         $content_conditions = array();
-        $values = array();
-        
-        // Build separate arrays for title and content values
         $title_values = array();
         $content_values = array();
         
         foreach ($keywords as $keyword) {
             $like_keyword = '%' . $wpdb->esc_like($keyword) . '%';
-            $title_conditions[] = "post_title LIKE %s";
-            $content_conditions[] = "post_content LIKE %s";
+            $title_conditions[] = "p.post_title LIKE %s";
+            $content_conditions[] = "p.post_content LIKE %s";
             $title_values[] = $like_keyword;
             $content_values[] = $like_keyword;
         }
@@ -1590,33 +1587,32 @@ class Baachal {
         $title_sql = implode(' OR ', $title_conditions);
         $content_sql = implode(' OR ', $content_conditions);
         
-        // Prepare each part separately and then combine
-        $title_prepared = '';
-        $content_prepared = '';
-        
-        if (!empty($title_values)) {
-            $title_prepared = $wpdb->prepare($title_sql, $title_values);
-        }
-        
-        if (!empty($content_values)) {
-            $content_prepared = $wpdb->prepare($content_sql, $content_values);
-        }
-        
-        // Build the final query without double preparation
-        $limit_prepared = intval($limit);
+        // Build the complete SQL with placeholders
         $sql = "
             SELECT p.ID, p.post_title,
-                   (CASE WHEN ({$title_prepared}) THEN 2 ELSE 0 END) +
-                   (CASE WHEN ({$content_prepared}) THEN 1 ELSE 0 END) as relevance_score
+                   (CASE WHEN ({$title_sql}) THEN 2 ELSE 0 END) +
+                   (CASE WHEN ({$content_sql}) THEN 1 ELSE 0 END) as relevance_score
             FROM {$wpdb->posts} p
-            WHERE p.post_type = 'product'
-            AND p.post_status = 'publish'
-            AND (({$title_prepared}) OR ({$content_prepared}))
+            WHERE p.post_type = %s
+            AND p.post_status = %s
+            AND (({$title_sql}) OR ({$content_sql}))
             ORDER BY relevance_score DESC, p.post_date DESC
-            LIMIT {$limit_prepared}
-        "; // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            LIMIT %d
+        ";
         
-        $results = $wpdb->get_results($sql);
+        // Prepare all values in correct order: title values, content values, post_type, post_status, title values again, content values again, limit
+        $prepare_values = array_merge(
+            $title_values,   // First set for CASE WHEN title
+            $content_values, // Second set for CASE WHEN content  
+            array('product'), // post_type
+            array('publish'), // post_status
+            $title_values,   // Third set for WHERE title
+            $content_values, // Fourth set for WHERE content
+            array($limit)    // limit
+        );
+        
+        $prepared_sql = $wpdb->prepare($sql, $prepare_values);
+        $results = $wpdb->get_results($prepared_sql);
         $products = array();
         
         foreach ($results as $result) {
@@ -1638,13 +1634,11 @@ class Baachal {
         
         // Search in product attributes (like color, material, etc.)
         $attribute_conditions = array();
-        $values = array();
-        
         $condition_values = array();
         
         foreach ($keywords as $keyword) {
             $like_keyword = '%' . $wpdb->esc_like($keyword) . '%';
-            $attribute_conditions[] = "meta_value LIKE %s";
+            $attribute_conditions[] = "pm.meta_value LIKE %s";
             $condition_values[] = $like_keyword;
         }
         
@@ -1654,22 +1648,28 @@ class Baachal {
         
         $conditions_sql = implode(' OR ', $attribute_conditions);
         
-        // Prepare the conditions separately
-        $prepared_conditions = $wpdb->prepare($conditions_sql, $condition_values);
-        
-        $sql = $wpdb->prepare("
+        // Prepare the complete SQL with all placeholders
+        $sql = "
             SELECT DISTINCT p.ID, p.post_title
             FROM {$wpdb->posts} p
             INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
-            WHERE p.post_type IN ('product', 'product_variation')
-            AND p.post_status = 'publish'
-            AND pm.meta_key LIKE 'attribute_%'
-            AND ({$prepared_conditions})
+            WHERE p.post_type IN (%s, %s)
+            AND p.post_status = %s
+            AND pm.meta_key LIKE %s
+            AND ({$conditions_sql})
             ORDER BY p.post_date DESC
             LIMIT %d
-        ", $limit);
+        ";
         
-        $results = $wpdb->get_results($sql);
+        // Prepare all values in one call
+        $prepare_values = array_merge(
+            array('product', 'product_variation', 'publish', 'attribute_%'),
+            $condition_values,
+            array($limit)
+        );
+        
+        $prepared_sql = $wpdb->prepare($sql, $prepare_values);
+        $results = $wpdb->get_results($prepared_sql);
         $products = array();
         
         foreach ($results as $result) {
