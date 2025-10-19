@@ -323,7 +323,6 @@ class Baachal {
             'nonce' => wp_create_nonce('baachal_nonce'),
             'debug_mode' => get_option('baachal_debug_mode', '0'),
             'message_persistence' => get_option('baachal_message_persistence', '1'),
-            'session_id' => $this->get_chat_session_id(),
             'plugin_url' => BAACHAL_PLUGIN_URL
         ));
 
@@ -481,11 +480,16 @@ class Baachal {
             return;
         }
         
+        // Get session ID from frontend (preferred) or fallback to server-side generation
+        $session_id = isset($_POST['session_id']) ? sanitize_text_field(wp_unslash($_POST['session_id'])) : null;
+        $session_id = $this->get_chat_session_id($session_id);
+        
         // Allow other plugins to modify the user message before processing
         // Only pass relevant context data instead of entire $_POST
         $message_context = array(
             'nonce' => isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '',
-            'original_message' => $message
+            'original_message' => $message,
+            'session_id' => $session_id
         );
         $message = apply_filters('baachal_before_process_message', $message, $message_context);
         
@@ -531,8 +535,8 @@ class Baachal {
             $bot_response = apply_filters('baachal_bot_response', $result['data'], $message, $result);
             
             // Save both user message and bot response
-            $this->save_chat_message($message, 'user');
-            $this->save_chat_message($bot_response, 'bot');
+            $this->save_chat_message($message, 'user', $session_id);
+            $this->save_chat_message($bot_response, 'bot', $session_id);
             
             // Allow other plugins to perform actions after successful response
             do_action('baachal_after_successful_response', $bot_response, $message, $result);
@@ -549,21 +553,21 @@ class Baachal {
         }
     }
     
-    private function get_chat_session_id() {
-        // Start session if not already started
-        if (!session_id()) {
-            session_start();
+    private function get_chat_session_id($provided_session_id = null) {
+        // If a session ID is provided (from frontend), validate and use it
+        if (!empty($provided_session_id)) {
+            // Validate session ID format
+            if (preg_match('/^chat_[a-f0-9\-]{36}$/', $provided_session_id)) {
+                return sanitize_text_field($provided_session_id);
+            }
         }
         
-        // Create or get session ID for chat
-        if (!isset($_SESSION['baachal_session_id'])) {
-            $_SESSION['baachal_session_id'] = 'chat_' . wp_generate_uuid4();
-        }
-        
-        return sanitize_text_field($_SESSION['baachal_session_id']);
+        // Generate a new session ID if none provided or invalid
+        // This ensures we never use PHP sessions
+        return 'chat_' . wp_generate_uuid4();
     }
     
-    private function save_chat_message($message, $type) {
+    private function save_chat_message($message, $type, $session_id = null) {
         // Allow other plugins to prevent message saving
         $should_save = apply_filters('baachal_should_save_message', true, $message, $type);
         
@@ -575,7 +579,10 @@ class Baachal {
             return; // Don't save if persistence is disabled
         }
         
-        $session_id = $this->get_chat_session_id();
+        // Use provided session ID or fall back to getting one
+        if (empty($session_id)) {
+            $session_id = $this->get_chat_session_id();
+        }
         $user_id = get_current_user_id();
         
         // Allow other plugins to modify message data before saving

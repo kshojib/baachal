@@ -2,6 +2,18 @@ jQuery(document).ready(function($) {
     let isOpen = false;
     let isLoading = false;
     
+    // Generate or retrieve session ID from localStorage
+    let sessionId = localStorage.getItem('baachal_session_id');
+    if (!sessionId) {
+        sessionId = 'chat_' + generateUUID();
+        localStorage.setItem('baachal_session_id', sessionId);
+    }
+    
+    // Debug: log session ID (can be removed in production)
+    if (baachal_ajax.debug_mode === '1') {
+        console.log('Baachal Session ID:', sessionId);
+    }
+    
     // Load saved messages on page load (if persistence is enabled)
     if (baachal_ajax.message_persistence === '1') {
         loadSavedMessages();
@@ -119,7 +131,8 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'baachal_message',
                 message: finalMessage,
-                nonce: baachal_ajax.nonce
+                nonce: baachal_ajax.nonce,
+                session_id: sessionId
             },
             success: function(response) {
                 hideLoading();
@@ -323,7 +336,7 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'baachal_get_chat_history',
                 nonce: baachal_ajax.nonce,
-                session_id: baachal_ajax.session_id
+                session_id: sessionId
             },
             success: function(response) {
                 if (response.success && response.data.length > 0) {
@@ -354,17 +367,30 @@ jQuery(document).ready(function($) {
             data: {
                 action: 'baachal_clear_chat_history',
                 nonce: baachal_ajax.nonce,
-                session_id: baachal_ajax.session_id
+                session_id: sessionId
             },
             success: function(response) {
                 if (response.success) {
                     $('#chatbot-messages .message:not(:first)').remove();
-                    console.log('Chat history cleared');
+                    
+                    // Generate new session ID for fresh start
+                    sessionId = 'chat_' + generateUUID();
+                    localStorage.setItem('baachal_session_id', sessionId);
+                    
+                    console.log('Chat history cleared and new session started');
                 }
             },
             error: function(xhr, status, error) {
                 console.warn('Could not clear chat history:', error);
             }
+        });
+    }
+    
+    // Generate a simple UUID for session ID
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
         });
     }
 });
