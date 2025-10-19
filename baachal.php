@@ -3,7 +3,7 @@
  * Plugin Name: Baachal AI Chatbot
  * Plugin URI: https://github.com/kshojib/baachal
  * Description: AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok). Intelligent customer support with automatic content indexing and WooCommerce integration.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Requires at least: 5.0
  * Tested up to: 6.8
  * Requires PHP: 7.4
@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('BAACHAL_VERSION', '1.0.2');
+define('BAACHAL_VERSION', '1.0.3');
 define('BAACHAL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('BAACHAL_PLUGIN_PATH', plugin_dir_path(__FILE__));
 

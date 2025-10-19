@@ -4,7 +4,7 @@ Tags: chatbot, ai, customer support, woocommerce, chat widget
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -191,6 +191,24 @@ Yes, the admin interface provides comprehensive statistics about indexed content
 4. **WooCommerce Integration** - Smart product recommendations with full details
 
 == Changelog ==
+
+= 1.0.3 =
+* Security: Fixed all SQL injection vulnerabilities using proper wpdb::prepare() methods
+* Security: Removed PHP session usage to improve server-side cache compatibility
+* Improvement: Implemented client-side session management using localStorage
+* Fix: All database queries now use proper parameterized statements
+* Compatibility: Plugin now works with nginx, Varnish, and other server-side caching systems
+
+= 1.0.2 =
+* Added multi-provider AI support (OpenAI, Claude, Grok)
+* Enhanced content indexing with better search algorithms
+* Improved WooCommerce integration
+* Bug fixes and performance improvements
+
+= 1.0.1 =
+* Minor bug fixes
+* Improved error handling
+* Enhanced UI responsiveness
 
 = 1.0.0 =
 * Initial release

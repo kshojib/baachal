@@ -5,6 +5,36 @@ All notable changes to the Baachal AI Chatbot plugin will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-10-19
+
+### 🔒 Major Security Fixes
+
+- **SQL Injection Prevention**: Complete rewrite of all database queries to use proper parameterized statements
+  - Fixed `search_by_weighted_keywords()` function to use single `wpdb::prepare()` call
+  - Fixed `search_by_attributes()` function to eliminate nested prepared statements
+  - Fixed `extract_attribute_terms()` function to use proper placeholders
+  - All cache cleanup queries now use `wpdb::prepare()` with placeholders
+  - Eliminated all direct SQL query construction
+
+### 🚀 Performance & Compatibility Improvements
+
+- **PHP Session Removal**: Completely eliminated PHP session usage for better cache compatibility
+  - Removed all `session_start()` calls that were breaking server-side caching
+  - Implemented client-side session management using localStorage and UUIDs
+  - Sessions now generated client-side and validated server-side
+  - Compatible with nginx, Varnish, and other server-side caching systems
+  - Improved scalability by removing server-side session storage requirements
+
+### 🛠️ Technical Improvements
+
+- **Client-Side Session Management**:
+  - Session IDs now generated using JavaScript UUIDs
+  - Persistent across browser sessions using localStorage
+  - Automatic session renewal when chat history is cleared
+  - Proper session ID validation on server-side
+- **Database Security**: All queries now use WordPress-standard security practices
+- **Cache Friendly**: Plugin no longer interferes with hosting provider caching
+
 ## [1.0.2] - 2025-10-17
 
 ### 🔧 Version Update
