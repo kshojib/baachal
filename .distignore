@@ -1,0 +1,14 @@
+# Development files
+.git
+.github
+.gitignore
+.distignore
+
+# Documentation
+README.md
+CHANGELOG.md
+DEVELOPER_HOOKS.md
+
+# OS files
+.DS_Store
+Thumbs.db
