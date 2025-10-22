@@ -7,7 +7,7 @@
 
 ## Overview
 
-Transform your WordPress website with an intelligent AI chatbot powered by multiple leading AI providers. Baachal AI Chatbot provides instant, accurate responses about your products, services, and content through advanced artificial intelligence with support for Google Gemini, OpenAI ChatGPT, Anthropic Claude, and xAI Grok.
+Transform your WordPress website with an intelligent AI chatbot powered by multiple leading AI providers. Baachal AI Chatbot with conversational product search provides instant, accurate responses about your products, services, and content through advanced artificial intelligence with support for Google Gemini, OpenAI ChatGPT, Anthropic Claude, and xAI Grok.
 
 ## 🚀 Key Features
 

@@ -8,11 +8,11 @@ Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Intelligent AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok) and automatic content indexing.
+Intelligent AI chatbot with conversational product search, multi-provider support (Gemini, OpenAI, Claude, Grok) and automatic content indexing.
 
 == Description ==
 
-**Baachal AI Chatbot** provides intelligent customer support powered by leading AI providers (Google Gemini, OpenAI, Anthropic Claude, xAI Grok). Get instant, accurate responses about your products and content.
+**Baachal AI Chatbot** with conversational product search provides intelligent customer support powered by leading AI providers (Google Gemini, OpenAI, Anthropic Claude, xAI Grok). Get instant, accurate responses about your products and content.
 
 ### 🚀 Key Features
 
@@ -46,7 +46,7 @@ Intelligent AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok
 ### 🔒 Privacy & Security
 
 * API keys stored securely
-* No data sent to third parties (except Google Gemini)
+* No data sent to third parties (except your selected AI provider)
 * User conversations can be optionally stored locally
 * GDPR compliant with data control options
 
@@ -54,12 +54,12 @@ Intelligent AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok
 
 1. **Content Indexing**: The plugin automatically scans and indexes your website content
 2. **Smart Understanding**: When users ask questions, it searches your indexed content and products
-3. **AI Processing**: Google Gemini AI processes the query with your website context
+3. **AI Processing**: Your chosen AI provider processes the query with your website context
 4. **Intelligent Responses**: Users receive accurate, helpful answers with relevant links
 
 ### 🛠️ Requirements
 
-* Google Gemini API key (free tier available)
+* At least one AI provider API key (most offer free tiers)
 * WordPress 5.0 or higher
 * PHP 7.4 or higher
 * MySQL 5.6 or higher with FULLTEXT support
@@ -67,7 +67,7 @@ Intelligent AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok
 ### 🎬 Quick Start
 
 1. Install and activate the plugin
-2. Get your free Google Gemini API key
+2. Get your AI provider API key (Google Gemini, OpenAI, Claude, or Grok)
 3. Configure basic settings in WordPress Admin → Settings → Baachal AI bot
 4. Index your content in the "Content Indexing" tab
 5. Customize the appearance in "UI Styling"
@@ -143,9 +143,23 @@ This plugin connects to external AI service APIs to process chat messages and pr
 
 == Frequently Asked Questions ==
 
-= Do I need a Google Gemini API key? =
+= Do I need an AI provider API key? =
 
-Yes, you need a free Google Gemini API key. You can get one from [Google AI Studio](https://makersuite.google.com/app/apikey). The free tier includes generous limits suitable for most websites.
+Yes, you need at least one API key from supported providers: Google Gemini, OpenAI, Anthropic Claude, or xAI Grok. Most providers offer free tiers with generous limits suitable for most websites. You can get API keys from:
+- Google Gemini: [Google AI Studio](https://makersuite.google.com/app/apikey)
+- OpenAI: [OpenAI Platform](https://platform.openai.com/api-keys)
+- Anthropic: [Anthropic Console](https://console.anthropic.com/)
+- xAI: [xAI Console](https://console.x.ai/)
+
+= Which AI provider should I choose? =
+
+Each provider has different strengths:
+- **Google Gemini**: Great balance of performance and cost, excellent for general use
+- **OpenAI**: Advanced reasoning capabilities, best for complex queries
+- **Anthropic Claude**: Excellent for detailed explanations and creative tasks
+- **xAI Grok**: Fast responses with reasoning capabilities
+
+You can configure multiple providers and switch between them.
 
 = Will this work with my theme? =
 
@@ -153,7 +167,7 @@ Yes! The chatbot is designed to work with any WordPress theme. It uses a floatin
 
 = Does it work with WooCommerce? =
 
-Absolutely! The plugin includes deep WooCommerce integration with product recommendations, inventory awareness, and attribute understanding.
+Absolutely! The plugin includes deep WooCommerce integration with product recommendations, inventory awareness, and conversational product search capabilities.
 
 = How does the content indexing work? =
 
@@ -161,7 +175,7 @@ The plugin automatically scans your posts, pages, and other content types, creat
 
 = Can I customize the chatbot appearance? =
 
-Yes! You can customize colors, position, size, animations, and more through the intuitive admin interface.
+Yes! You can customize colors, position, size, animations, and more through the intuitive admin interface with beautiful preset color palettes.
 
 = Is it mobile-friendly? =
 
@@ -169,7 +183,7 @@ Yes, the chatbot is fully responsive and optimized for mobile devices with touch
 
 = What about privacy and GDPR? =
 
-The plugin is GDPR compliant. You control what data is stored and can enable/disable conversation logging. Only necessary data is sent to Google Gemini for processing.
+The plugin is GDPR compliant. You control what data is stored and can enable/disable conversation logging. Only necessary data is sent to your chosen AI provider for processing.
 
 = Can I exclude specific pages from indexing? =
 
@@ -242,19 +256,23 @@ For support, feature requests, or bug reports, please visit:
 
 == Credits ==
 
-* Powered by Google Gemini AI
+* Powered by multiple leading AI providers (Google Gemini, OpenAI, Anthropic Claude, xAI Grok)
 * Developed by Shojib Khan
 * Icons from various open-source projects
 
 == Privacy Policy ==
 
-This plugin connects to Google's Gemini AI service to process chat messages. When users interact with the chatbot:
+This plugin connects to AI service providers to process chat messages. When users interact with the chatbot:
 
-* User messages are sent to Google Gemini API for processing
+* User messages are sent to your selected AI provider's API for processing
 * Website content (as context) may be included in API requests
-* No personal data is stored by Google beyond the API call
+* No personal data is stored by AI providers beyond the API call processing
 * Conversations can optionally be logged locally on your website
 * API keys are stored securely in your WordPress database
-* No data is shared with third parties other than Google Gemini
+* No data is shared with third parties other than your selected AI provider
 
-For Google's privacy policy, visit: https://policies.google.com/privacy
+For privacy policies of supported providers:
+- Google Gemini: https://policies.google.com/privacy
+- OpenAI: https://openai.com/privacy/
+- Anthropic: https://www.anthropic.com/privacy
+- xAI: https://x.ai/privacy
