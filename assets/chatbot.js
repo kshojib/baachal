@@ -225,30 +225,11 @@ jQuery(document).ready(function($) {
         type = beforeAddEvent.type;
         save = beforeAddEvent.save;
         
-        // Process content for bot messages to handle links
+        // Process content for bot messages to handle links and safe HTML blocks
         let processedContent = content;
         if (type === 'bot') {
-            // First, convert markdown links [text](url) to HTML
-            processedContent = processedContent.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-            
-            // Escape HTML for safety, but preserve our link tags
-            const linkPlaceholders = [];
-            let linkIndex = 0;
-            
-            // Extract existing HTML links and replace with placeholders
-            processedContent = processedContent.replace(/<a\s+href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, function(match, url, text) {
-                const placeholder = `__LINK_${linkIndex++}__`;
-                linkPlaceholders.push(`<a href="${url}" target="_blank" rel="noopener">${text}</a>`);
-                return placeholder;
-            });
-            
-            // Escape remaining HTML
-            processedContent = escapeHtml(processedContent);
-            
-            // Restore links
-            linkPlaceholders.forEach((link, index) => {
-                processedContent = processedContent.replace(`__LINK_${index}__`, link);
-            });
+            processedContent = convertMarkdownLinks(processedContent);
+            processedContent = sanitizeBotHtml(processedContent);
         } else {
             processedContent = escapeHtml(content);
         }
@@ -293,6 +274,103 @@ jQuery(document).ready(function($) {
             top: messagesContainer.scrollHeight,
             behavior: 'smooth'
         });
+    }
+    
+    function sanitizeBotHtml(rawContent) {
+        if (typeof DOMParser === 'undefined') {
+            return escapeHtml(rawContent);
+        }
+        
+        const parser = new DOMParser();
+        const parsed = parser.parseFromString(`<div>${rawContent}</div>`, 'text/html');
+        
+        if (parsed.querySelector('parsererror')) {
+            return escapeHtml(rawContent);
+        }
+        
+        const allowedTags = new Set([
+            'DIV', 'P', 'SPAN', 'A', 'IMG', 'UL', 'OL', 'LI', 'STRONG', 'EM', 'B', 'I', 'BR',
+            'H3', 'H4', 'H5', 'H6', 'SMALL', 'ARTICLE', 'SECTION', 'BUTTON', 'FIGURE', 'FIGCAPTION',
+            'SUP', 'SUB', 'DEL', 'INS', 'BDI'
+        ]);
+        
+        const allowedAttributes = {
+            '*': ['class'],
+            A: ['href', 'target', 'rel', 'title'],
+            IMG: ['src', 'alt', 'loading', 'width', 'height'],
+            BUTTON: ['type']
+        };
+        
+        const safeHrefPattern = /^(https?:|mailto:|tel:|\/|#)/i;
+        const safeLoadingValues = ['lazy', 'eager', 'auto'];
+        
+        const traverse = (node) => {
+            Array.from(node.children).forEach((child) => {
+                if (!allowedTags.has(child.tagName)) {
+                    const fragment = parsed.createDocumentFragment();
+                    while (child.firstChild) {
+                        fragment.appendChild(child.firstChild);
+                    }
+                    child.replaceWith(fragment);
+                    return;
+                }
+                
+                Array.from(child.attributes).forEach((attr) => {
+                    const attrName = attr.name.toLowerCase();
+                    const allowedForTag = (allowedAttributes[child.tagName] || []).concat(allowedAttributes['*'] || []);
+                    
+                    if (!allowedForTag.includes(attrName)) {
+                        child.removeAttribute(attr.name);
+                        return;
+                    }
+                    
+                    if (attrName === 'href') {
+                        const value = attr.value.trim();
+                        if (!safeHrefPattern.test(value)) {
+                            child.setAttribute('href', '#');
+                        }
+                    }
+                    
+                    if (attrName === 'target') {
+                        child.setAttribute('target', '_blank');
+                    }
+                    
+                    if (attrName === 'rel') {
+                        child.setAttribute('rel', 'noopener noreferrer');
+                    }
+                    
+                    if (attrName === 'loading') {
+                        const value = attr.value.toLowerCase();
+                        if (!safeLoadingValues.includes(value)) {
+                            child.setAttribute('loading', 'lazy');
+                        }
+                    }
+                });
+                
+                if (child.tagName === 'A') {
+                    if (!child.hasAttribute('target')) {
+                        child.setAttribute('target', '_blank');
+                    }
+                    if (!child.hasAttribute('rel')) {
+                        child.setAttribute('rel', 'noopener noreferrer');
+                    }
+                }
+                
+                traverse(child);
+            });
+        };
+        
+        const container = parsed.body.firstElementChild;
+        if (!container) {
+            return '';
+        }
+        
+        traverse(container);
+        return container.innerHTML;
+    }
+    
+    function convertMarkdownLinks(text) {
+        return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
     }
     
     function escapeHtml(text) {

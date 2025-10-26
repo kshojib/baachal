@@ -44,6 +44,13 @@ add_action('before_woocommerce_init', function() {
 // Main plugin class
 class Baachal {
     
+    /**
+     * Holds rendered product cards for the current response cycle.
+     *
+     * @var string
+     */
+    private $current_product_cards_html = '';
+    
     public function __construct() {
         // Allow other plugins to modify the hooks that get registered
         $hooks = apply_filters('baachal_register_hooks', array(
@@ -484,6 +491,9 @@ class Baachal {
         $session_id = isset($_POST['session_id']) ? sanitize_text_field(wp_unslash($_POST['session_id'])) : null;
         $session_id = $this->get_chat_session_id($session_id);
         
+        // Reset product card state for this request cycle.
+        $this->current_product_cards_html = '';
+        
         // Allow other plugins to modify the user message before processing
         // Only pass relevant context data instead of entire $_POST
         $message_context = array(
@@ -541,6 +551,10 @@ class Baachal {
         if ($result['success']) {
             // Allow other plugins to modify the response before saving/sending
             $bot_response = apply_filters('baachal_bot_response', $result['data'], $message, $result);
+            
+            if (!empty($this->current_product_cards_html)) {
+                $bot_response .= "\n\n" . $this->current_product_cards_html;
+            }
             
             // Save both user message and bot response
             $this->save_chat_message($message, 'user', $session_id);
@@ -1337,7 +1351,8 @@ class Baachal {
         }
         
         $context .= "Please answer questions about this website helpfully and accurately. ";
-        $context .= "When mentioning specific products, always include clickable links in this format: [Product Name](URL). ";
+        $context .= "When mentioning specific products, always include clickable links in this format: [Product Name](URL) or an HTML link such as <a href=\"URL\">Product Name</a>. ";
+        $context .= "When recommending multiple products, let the visitor know that product cards appear beneath your reply. ";
         $context .= "When referencing website pages or content, include clickable links in this format: [Page Title](URL). ";
         $context .= "If you don't know something specific about the website, be honest about it. ";
         $context .= "Keep your responses friendly and concise.";
@@ -1943,63 +1958,199 @@ class Baachal {
         );
         
         $products = get_posts($args);
-        return $this->format_products_context($products);
+        return $this->format_products_context($products, false);
     }
     
-    private function format_products_context($products) {
+    private function format_products_context($products, $render_cards = true) {
         if (empty($products)) {
+            $this->current_product_cards_html = '';
             return '';
+        }
+        
+        $cards = array();
+        
+        foreach ($products as $product) {
+            $wc_product = wc_get_product($product->ID);
+            if (!$wc_product || !$wc_product->is_visible()) {
+                continue;
+            }
+            
+            $price_html = $wc_product->get_price_html();
+            $price_text = $price_html ? wp_strip_all_tags($price_html) : '';
+            $raw_price = $wc_product->get_price();
+            if (empty($price_text) && $raw_price !== '') {
+                if (function_exists('wc_price')) {
+                    $price_text = wp_strip_all_tags(wc_price($raw_price));
+                } else {
+                    $price_text = $raw_price;
+                }
+            }
+            
+            $categories = wp_get_post_terms($product->ID, 'product_cat', array('fields' => 'names'));
+            $category_names = !empty($categories) ? implode(', ', $categories) : __('Uncategorized', 'baachal');
+            
+            $attributes_raw = $this->get_product_attributes($wc_product);
+            $attributes = array();
+            foreach ($attributes_raw as $attribute) {
+                $attributes[] = wp_strip_all_tags($attribute);
+            }
+            
+            $stock_status = $wc_product->get_stock_status();
+            $stock_message = '';
+            if ($stock_status === 'outofstock') {
+                $stock_message = __('Out of stock', 'baachal');
+            } elseif ($stock_status === 'onbackorder') {
+                $stock_message = __('Available on backorder', 'baachal');
+            } elseif ($stock_status === 'instock') {
+                if ($wc_product->managing_stock()) {
+                    $quantity = $wc_product->get_stock_quantity();
+                    if (!is_null($quantity)) {
+                        $stock_message = sprintf(
+                            _n('%d item available', '%d items available', $quantity, 'baachal'),
+                            $quantity
+                        );
+                    } else {
+                        $stock_message = __('In stock', 'baachal');
+                    }
+                } else {
+                    $stock_message = __('In stock', 'baachal');
+                }
+            }
+            
+            $description = '';
+            if ($wc_product->get_short_description()) {
+                $description = wp_strip_all_tags($wc_product->get_short_description());
+                $description = wp_trim_words($description, 30, '...');
+            }
+            
+            $image_url = get_the_post_thumbnail_url($product->ID, 'woocommerce_thumbnail');
+            if (!$image_url) {
+                $image_url = '';
+            }
+            
+            $cards[] = array(
+                'id' => $product->ID,
+                'name' => $product->post_title,
+                'url' => get_permalink($product->ID),
+                'image' => $image_url,
+                'price_html' => $price_html,
+                'price_text' => $price_text,
+                'categories' => $category_names,
+                'attributes' => $attributes,
+                'stock_status' => $stock_status,
+                'stock_message' => $stock_message,
+                'description' => $description,
+            );
+        }
+        
+        if (empty($cards)) {
+            $this->current_product_cards_html = '';
+            return '';
+        }
+        
+        $cards = apply_filters('baachal_product_card_data', $cards, $products);
+        
+        if ($render_cards) {
+            $this->current_product_cards_html = $this->build_product_cards_html($cards);
+        } else {
+            $this->current_product_cards_html = '';
         }
         
         $context = "\n\nThis is a WooCommerce online store. Here are the most relevant products matching your query:\n";
         
-        foreach ($products as $product) {
-            $wc_product = wc_get_product($product->ID);
-            if ($wc_product && $wc_product->is_visible()) {
-                $price = $wc_product->get_price_html();
-                $categories = wp_get_post_terms($product->ID, 'product_cat', array('fields' => 'names'));
-                $category_names = !empty($categories) ? implode(', ', $categories) : 'Uncategorized';
-                
-                $product_info = "- **{$product->post_title}**";
-                $product_info .= " | Price: {$price}";
-                $product_info .= " | Category: {$category_names}";
-                
-                // Add product attributes if available
-                $attributes = $this->get_product_attributes($wc_product);
-                if (!empty($attributes)) {
-                    $product_info .= " | " . implode(', ', $attributes);
-                }
-                
-                $product_info .= " | URL: " . get_permalink($product->ID);
-                
-                // Add short description if available
-                if ($wc_product->get_short_description()) {
-                    $short_desc = wp_strip_all_tags($wc_product->get_short_description());
-                    $short_desc = substr($short_desc, 0, 100) . (strlen($short_desc) > 100 ? '...' : '');
-                    $product_info .= " | Description: {$short_desc}";
-                }
-                
-                // Add stock status
-                $stock_status = $wc_product->get_stock_status();
-                if ($stock_status === 'outofstock') {
-                    $product_info .= " | **OUT OF STOCK**";
-                } elseif ($stock_status === 'onbackorder') {
-                    $product_info .= " | Available on backorder";
-                }
-                
-                $context .= $product_info . "\n";
+        foreach ($cards as $card) {
+            $product_info = "- **{$card['name']}**";
+            
+            if (!empty($card['price_text'])) {
+                $product_info .= " | Price: {$card['price_text']}";
             }
+            
+            if (!empty($card['categories'])) {
+                $product_info .= " | Category: {$card['categories']}";
+            }
+            
+            if (!empty($card['attributes'])) {
+                $attributes_list = is_array($card['attributes']) ? implode(', ', $card['attributes']) : $card['attributes'];
+                $product_info .= " | {$attributes_list}";
+            }
+            
+            $product_info .= " | URL: {$card['url']}";
+            
+            if (!empty($card['description'])) {
+                $product_info .= " | Description: {$card['description']}";
+            }
+            
+            if (!empty($card['stock_message'])) {
+                $product_info .= " | Stock: {$card['stock_message']}";
+            }
+            
+            $context .= $product_info . "\n";
         }
         
         $context .= "\nInstructions for product recommendations:\n";
-        $context .= "- These are the most relevant products based on the user's query\n";
-        $context .= "- ALWAYS include product URLs as clickable links: [Product Name](URL)\n";
-        $context .= "- If the user asks for something not in this list, suggest the closest alternatives\n";
-        $context .= "- Mention that there may be more products available and suggest browsing categories\n";
-        $context .= "- Focus on helping the customer find what they need from these relevant options\n";
-        $context .= "- Pay attention to product attributes (material, color, size, etc.) when making recommendations\n";
+        $context .= "- Reference the product names exactly as provided so they align with the product cards appended to your reply\n";
+        $context .= "- Keep your introduction concise (1-2 sentences) before highlighting the products\n";
+        $context .= "- Encourage the customer to open the product links or browse related categories for similar options\n";
+        $context .= "- Focus on attributes (material, color, size, etc.) that match the user's intent\n";
+        $context .= "- A formatted product card grid will automatically appear beneath your message using the same data—do not repeat full specifications\n";
         
         return $context;
+    }
+    
+    private function build_product_cards_html($cards) {
+        if (empty($cards)) {
+            return '';
+        }
+        
+        $cards_html = '<div class="baachal-product-grid">';
+        
+        foreach ($cards as $card) {
+            $url = isset($card['url']) ? $card['url'] : '';
+            $name = isset($card['name']) ? $card['name'] : '';
+            $image = isset($card['image']) ? $card['image'] : '';
+            $price_html = isset($card['price_html']) ? $card['price_html'] : '';
+            $price_text = isset($card['price_text']) ? $card['price_text'] : '';
+            
+            $cards_html .= '<article class="baachal-product-card">';
+            
+            $link_tag = 'div';
+            $link_classes = 'baachal-product-link baachal-product-link--static';
+            $link_attrs = '';
+            
+            if (!empty($url)) {
+                $link_tag = 'a';
+                $link_classes = 'baachal-product-link';
+                $link_attrs = ' href="' . esc_url($url) . '" target="_blank" rel="noopener"';
+            }
+            
+            $cards_html .= '<' . $link_tag . ' class="' . esc_attr($link_classes) . '"' . $link_attrs . '>';
+            
+            if (!empty($image)) {
+                $cards_html .= '<div class="baachal-product-image">';
+                $cards_html .= '<img src="' . esc_url($image) . '" alt="' . esc_attr($name) . '" loading="lazy" />';
+                $cards_html .= '</div>';
+            } else {
+                $placeholder_label = !empty($url) ? esc_html__('View product', 'baachal') : esc_html__('No image available', 'baachal');
+                $cards_html .= '<div class="baachal-product-image baachal-product-image--placeholder"><span>' . $placeholder_label . '</span></div>';
+            }
+            
+            $cards_html .= '<div class="baachal-product-body">';
+            $cards_html .= '<h4 class="baachal-product-title">' . esc_html($name) . '</h4>';
+            
+            if (!empty($price_html)) {
+                $cards_html .= '<div class="baachal-product-price">' . wp_kses_post($price_html) . '</div>';
+            } elseif (!empty($price_text)) {
+                $cards_html .= '<div class="baachal-product-price">' . esc_html($price_text) . '</div>';
+            }
+            
+            $cards_html .= '</div>';
+            $cards_html .= '</' . $link_tag . '>';
+            $cards_html .= '</article>';
+        }
+        
+        $cards_html .= '</div>';
+        
+        return apply_filters('baachal_product_cards_html', $cards_html, $cards);
     }
     
     private function get_content_context($user_message = '') {

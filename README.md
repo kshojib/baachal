@@ -394,6 +394,7 @@ Enable debug mode in **Advanced Settings** for detailed logging:
 - 🧠 **Smart Context Management**: Configurable memory limit (1-50 messages) with API cost optimization
 - 💬 **Enhanced Conversations**: More natural, context-aware responses that reference previous exchanges
 - ⚙️ **Advanced Settings**: New conversational memory controls in Advanced settings tab
+- Added product card instead of showing products in plain text
 
 #### 🔧 Technical Improvements
 

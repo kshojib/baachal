@@ -372,6 +372,100 @@
     color: #333;
 }
 
+.message-content .baachal-product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.message-content .baachal-product-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.message-content .baachal-product-link,
+.message-content .baachal-product-link--static {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.message-content .baachal-product-link {
+    cursor: pointer;
+}
+
+.message-content .baachal-product-link:hover .baachal-product-title {
+    text-decoration: underline;
+}
+
+.message-content .baachal-product-link--static {
+    cursor: default;
+}
+
+.message-content .baachal-product-image {
+    flex: 0 0 72px;
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f1f3f5 0%, #e9ecef 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #495057;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    padding: 6px;
+}
+
+.message-content .baachal-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.message-content .baachal-product-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.message-content .baachal-product-title {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.35;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.message-content .baachal-product-price {
+    font-weight: 600;
+    color: var(--chatbot-primary-color);
+}
+
+.message-content .baachal-product-image--placeholder span {
+    line-height: 1.2;
+}
+
+.message-content .baachal-product-grid + p,
+.message-content .baachal-product-grid + div {
+    margin-top: 12px;
+}
+
+.message-content .baachal-product-card + .baachal-product-card {
+    margin-top: 0;
+}
+
 .user-message .message-content {
     background: linear-gradient(135deg, var(--chatbot-primary-color) 0%, #764ba2 100%);
     color: white;
