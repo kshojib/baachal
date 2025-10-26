@@ -12,7 +12,7 @@ Intelligent AI chatbot with conversational product search, multi-provider suppor
 
 == Description ==
 
-**Baachal AI Chatbot** with conversational product search provides intelligent customer support powered by leading AI providers (Google Gemini, OpenAI, Anthropic Claude, xAI Grok). Get instant, accurate responses about your products and content.
+**Baachal AI Chatbot** is an AI chatbot for WooCommerce that combines conversational product search with intelligent customer support powered by leading AI providers (Google Gemini, OpenAI, Anthropic Claude, xAI Grok). It delivers instant, accurate responses about your products and content so shoppers find what they need without waiting.
 
 ### 🚀 Key Features
 
