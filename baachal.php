@@ -3,7 +3,7 @@
  * Plugin Name: Baachal AI Chatbot
  * Plugin URI: https://github.com/kshojib/baachal
  * Description: AI chatbot with multi-provider support (Gemini, OpenAI, Claude, Grok). Intelligent customer support with automatic content indexing and WooCommerce integration.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Requires at least: 5.0
  * Tested up to: 6.8
  * Requires PHP: 7.4
@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('BAACHAL_VERSION', '1.0.3');
+define('BAACHAL_VERSION', '1.0.4');
 define('BAACHAL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('BAACHAL_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -524,11 +524,19 @@ class Baachal {
             'provider' => $provider,
             'message_length' => strlen($message)
         );
+        
+        // Get conversation history if conversation memory is enabled
+        $conversation_history = array();
+        if (get_option('baachal_conversation_memory', '0') === '1') {
+            $conversation_history = $this->get_conversation_history($session_id);
+        }
+        
         $api_params = apply_filters('baachal_api_params', array(
-            'message' => $message
+            'message' => $message,
+            'conversation_history' => $conversation_history
         ), $api_context);
         
-        $result = $this->call_ai_api($api_params['message']);
+        $result = $this->call_ai_api($api_params['message'], $api_params['conversation_history']);
         
         if ($result['success']) {
             // Allow other plugins to modify the response before saving/sending
@@ -672,6 +680,58 @@ class Baachal {
         }
         
         return false;
+    }
+    
+    private function get_conversation_history($session_id) {
+        // Get conversation for this session
+        $conversation = get_posts(array(
+            'post_type' => 'baachal_conversation',
+            'meta_query' => array(
+                array(
+                    'key' => '_session_id',
+                    'value' => $session_id,
+                    'compare' => '='
+                )
+            ),
+            'posts_per_page' => 1,
+            'post_status' => 'publish'
+        ));
+        
+        if (empty($conversation)) {
+            return array();
+        }
+        
+        $messages = get_post_meta($conversation[0]->ID, '_chat_messages', true);
+        if (!is_array($messages)) {
+            return array();
+        }
+        
+        // Get memory limit setting (default 10 messages)
+        $memory_limit = get_option('baachal_memory_limit', 10);
+        
+        // Allow other plugins to modify memory limit dynamically
+        $memory_limit = apply_filters('baachal_memory_limit', $memory_limit, $session_id);
+        
+        // Return only the most recent messages up to the limit
+        // Exclude the current user message that hasn't been saved yet
+        $recent_messages = array_slice($messages, -$memory_limit);
+        
+        // Filter to return only user and bot messages with proper format
+        $formatted_history = array();
+        foreach ($recent_messages as $msg) {
+            if (isset($msg['type']) && isset($msg['message']) && 
+                in_array($msg['type'], array('user', 'bot'))) {
+                $formatted_history[] = array(
+                    'role' => $msg['type'] === 'user' ? 'user' : 'assistant',
+                    'content' => $msg['message']
+                );
+            }
+        }
+        
+        // Allow other plugins to filter conversation history
+        $formatted_history = apply_filters('baachal_conversation_history', $formatted_history, $session_id);
+        
+        return $formatted_history;
     }
     
     public function get_chat_history() {
@@ -828,7 +888,7 @@ class Baachal {
         }
     }
     
-    private function call_ai_api($message) {
+    private function call_ai_api($message, $conversation_history = array()) {
         $provider = get_option('baachal_ai_provider', 'gemini');
         $api_key = get_option('baachal_' . $provider . '_api_key', '');
         
@@ -841,13 +901,13 @@ class Baachal {
         
         switch ($provider) {
             case 'gemini':
-                return $this->call_gemini_api($message, $api_key);
+                return $this->call_gemini_api($message, $api_key, $conversation_history);
             case 'openai':
-                return $this->call_openai_api($message, $api_key);
+                return $this->call_openai_api($message, $api_key, $conversation_history);
             case 'claude':
-                return $this->call_claude_api($message, $api_key);
+                return $this->call_claude_api($message, $api_key, $conversation_history);
             case 'grok':
-                return $this->call_grok_api($message, $api_key);
+                return $this->call_grok_api($message, $api_key, $conversation_history);
             default:
                 return array(
                     'success' => false,
@@ -856,22 +916,63 @@ class Baachal {
         }
     }
 
-    private function call_gemini_api($message, $api_key) {
+    private function call_gemini_api($message, $api_key, $conversation_history = array()) {
         $website_context = $this->get_website_context($message);
-        $full_prompt = $website_context . "\n\nUser question: " . $message;
         
         // Get selected model from settings
         $selected_model = get_option('baachal_ai_model', 'gemini-2.0-flash-exp');
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $selected_model . ':generateContent?key=' . $api_key;
         
-        $data = array(
-            'contents' => array(
-                array(
+        // Build conversation contents
+        $contents = array();
+        
+        // Add system context as the first message if we have conversation history
+        if (!empty($conversation_history)) {
+            $contents[] = array(
+                'parts' => array(
+                    array('text' => $website_context)
+                ),
+                'role' => 'user'
+            );
+            $contents[] = array(
+                'parts' => array(
+                    array('text' => 'I understand. I will use this context to help answer questions about your website and products.')
+                ),
+                'role' => 'model'
+            );
+            
+            // Add conversation history
+            foreach ($conversation_history as $history_message) {
+                $contents[] = array(
                     'parts' => array(
-                        array('text' => $full_prompt)
-                    )
+                        array('text' => $history_message['content'])
+                    ),
+                    'role' => $history_message['role'] === 'user' ? 'user' : 'model'
+                );
+            }
+        }
+        
+        // Add current message
+        if (!empty($conversation_history)) {
+            // If we have history, just add the current message
+            $contents[] = array(
+                'parts' => array(
+                    array('text' => $message)
+                ),
+                'role' => 'user'
+            );
+        } else {
+            // If no history, include context with the message
+            $full_prompt = $website_context . "\n\nUser question: " . $message;
+            $contents[] = array(
+                'parts' => array(
+                    array('text' => $full_prompt)
                 )
-            ),
+            );
+        }
+        
+        $data = array(
+            'contents' => $contents,
             'generationConfig' => array(
                 'temperature' => 0.7,
                 'topK' => 40,
@@ -953,21 +1054,40 @@ class Baachal {
         );
     }
 
-    private function call_openai_api($message, $api_key) {
+    private function call_openai_api($message, $api_key, $conversation_history = array()) {
         $website_context = $this->get_website_context($message);
-        $full_prompt = $website_context . "\n\nUser question: " . $message;
         
         $selected_model = get_option('baachal_ai_model', 'gpt-5');
         $url = 'https://api.openai.com/v1/chat/completions';
         
+        // Build messages array
+        $messages = array();
+        
+        // Add system message with website context
+        $messages[] = array(
+            'role' => 'system',
+            'content' => $website_context
+        );
+        
+        // Add conversation history if available
+        if (!empty($conversation_history)) {
+            foreach ($conversation_history as $history_message) {
+                $messages[] = array(
+                    'role' => $history_message['role'] === 'user' ? 'user' : 'assistant',
+                    'content' => $history_message['content']
+                );
+            }
+        }
+        
+        // Add current user message
+        $messages[] = array(
+            'role' => 'user',
+            'content' => $message
+        );
+        
         $data = array(
             'model' => $selected_model,
-            'messages' => array(
-                array(
-                    'role' => 'user',
-                    'content' => $full_prompt
-                )
-            ),
+            'messages' => $messages,
             'max_tokens' => 1024,
             'temperature' => 0.7
         );
@@ -1018,23 +1138,47 @@ class Baachal {
         );
     }
 
-    private function call_claude_api($message, $api_key) {
+    private function call_claude_api($message, $api_key, $conversation_history = array()) {
         $website_context = $this->get_website_context($message);
-        $full_prompt = $website_context . "\n\nUser question: " . $message;
         
         $selected_model = get_option('baachal_ai_model', 'claude-3-5-sonnet-20241022');
         $url = 'https://api.anthropic.com/v1/messages';
         
+        // Build messages array
+        $messages = array();
+        
+        // Add conversation history if available
+        if (!empty($conversation_history)) {
+            foreach ($conversation_history as $history_message) {
+                $messages[] = array(
+                    'role' => $history_message['role'],
+                    'content' => $history_message['content']
+                );
+            }
+        }
+        
+        // Add current user message
+        $current_content = $message;
+        if (empty($conversation_history)) {
+            // If no history, include context with the first message
+            $current_content = $website_context . "\n\nUser question: " . $message;
+        }
+        
+        $messages[] = array(
+            'role' => 'user',
+            'content' => $current_content
+        );
+        
         $data = array(
             'model' => $selected_model,
             'max_tokens' => 1024,
-            'messages' => array(
-                array(
-                    'role' => 'user',
-                    'content' => $full_prompt
-                )
-            )
+            'messages' => $messages
         );
+        
+        // Add system message if we have conversation history
+        if (!empty($conversation_history)) {
+            $data['system'] = $website_context;
+        }
         
         $args = array(
             'body' => json_encode($data),
@@ -1083,21 +1227,40 @@ class Baachal {
         );
     }
 
-    private function call_grok_api($message, $api_key) {
+    private function call_grok_api($message, $api_key, $conversation_history = array()) {
         $website_context = $this->get_website_context($message);
-        $full_prompt = $website_context . "\n\nUser question: " . $message;
         
         $selected_model = get_option('baachal_ai_model', 'grok-beta');
         $url = 'https://api.x.ai/v1/chat/completions';
         
+        // Build messages array
+        $messages = array();
+        
+        // Add system message with website context
+        $messages[] = array(
+            'role' => 'system',
+            'content' => $website_context
+        );
+        
+        // Add conversation history if available
+        if (!empty($conversation_history)) {
+            foreach ($conversation_history as $history_message) {
+                $messages[] = array(
+                    'role' => $history_message['role'] === 'user' ? 'user' : 'assistant',
+                    'content' => $history_message['content']
+                );
+            }
+        }
+        
+        // Add current user message
+        $messages[] = array(
+            'role' => 'user',
+            'content' => $message
+        );
+        
         $data = array(
             'model' => $selected_model,
-            'messages' => array(
-                array(
-                    'role' => 'user',
-                    'content' => $full_prompt
-                )
-            ),
+            'messages' => $messages,
             'max_tokens' => 1024,
             'temperature' => 0.7
         );
@@ -2139,6 +2302,12 @@ class Baachal {
         ));
         register_setting('baachal_settings', 'baachal_animation_enabled', array(
             'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
+        register_setting('baachal_settings', 'baachal_conversation_memory', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox')
+        ));
+        register_setting('baachal_settings', 'baachal_memory_limit', array(
+            'sanitize_callback' => 'absint'
         ));
     }
     

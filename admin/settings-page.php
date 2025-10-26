@@ -145,6 +145,17 @@ if (isset($_POST['submit'])) {
         update_option('baachal_animation_enabled', '0');
     }
     
+    // Conversational Memory Settings
+    update_option('baachal_conversation_memory', isset($_POST['baachal_conversation_memory']) ? '1' : '0');
+    if (isset($_POST['baachal_memory_limit'])) {
+        $memory_limit = intval($_POST['baachal_memory_limit']);
+        $memory_limit = max(1, min(50, $memory_limit)); // Ensure between 1-50
+        update_option('baachal_memory_limit', $memory_limit);
+    }
+    
+    // Preserve data on uninstall
+    update_option('baachal_preserve_data_on_uninstall', isset($_POST['baachal_preserve_data_on_uninstall']) ? '1' : '0');
+    
     // Content Indexing Settings
     update_option('baachal_content_indexing_enabled', isset($_POST['baachal_content_indexing_enabled']) ? '1' : '0');
     update_option('baachal_auto_index', isset($_POST['baachal_auto_index']) ? '1' : '0');
@@ -172,7 +183,8 @@ if (isset($_POST['submit'])) {
         // Only pass non-core baachal settings that other plugins might need
         if (strpos($key, 'baachal_') === 0 && !in_array($key, array(
             'baachal_ai_provider', 'baachal_enabled', 'baachal_debug_mode', 
-            'baachal_gemini_api_key', 'baachal_openai_api_key', 'baachal_claude_api_key', 'baachal_grok_api_key'
+            'baachal_gemini_api_key', 'baachal_openai_api_key', 'baachal_claude_api_key', 'baachal_grok_api_key',
+            'baachal_conversation_memory', 'baachal_memory_limit', 'baachal_preserve_data_on_uninstall'
         ), true)) {
             if (is_array($value)) {
                 $additional_settings[$key] = array_map('sanitize_text_field', array_map('wp_unslash', $value));
@@ -200,6 +212,8 @@ $ai_model = get_option('baachal_ai_model', 'gemini-2.0-flash-exp');
 $woocommerce_integration = get_option('baachal_woocommerce_integration', '1');
 $message_persistence = get_option('baachal_message_persistence', '1');
 $show_clear_history = get_option('baachal_show_clear_history', '1');
+$conversation_memory = get_option('baachal_conversation_memory', '0');
+$memory_limit = get_option('baachal_memory_limit', '10');
 
 // Product search settings
 $max_terms = get_option('baachal_max_terms', 50);

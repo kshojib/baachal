@@ -2,6 +2,16 @@
 
 This document lists all available action hooks and filter hooks that developers can use to extend the Baachal AI Bot plugin functionality.
 
+## Recent Updates (v1.0.4)
+
+### New Conversational Memory Hooks
+
+The conversational memory feature introduces new ways to modify conversation context and behavior:
+
+- **`baachal_conversation_history`** - Filter conversation history before sending to AI
+- **`baachal_memory_limit`** - Modify memory limit dynamically per conversation
+- **Enhanced `baachal_api_params`** - Now includes conversation_history parameter
+
 ## Action Hooks
 
 ### Plugin Initialization
@@ -408,9 +418,66 @@ add_filter('baachal_custom_message_handler', function($response, $message, $post
 
 #### `baachal_api_params`
 
-**Description:** Filter API parameters before calling Gemini.
-**Parameters:** `$params` - Array with message and api_key, `$post_data` - $\_POST data
+**Description:** Filter API parameters before calling AI provider. Enhanced in v1.0.4 to include conversation history.
+**Parameters:** `$params` - Array with message, conversation_history, and other params, `$api_context` - Context data
 **Return:** Array of parameters
+
+**Example:**
+
+```php
+add_filter('baachal_api_params', function($params, $context) {
+    // Access conversation history
+    $history = $params['conversation_history'];
+
+    // Modify or filter conversation history
+    $filtered_history = array_filter($history, function($msg) {
+        // Only include messages from the last 5 minutes
+        return (time() - strtotime($msg['timestamp'])) < 300;
+    });
+
+    $params['conversation_history'] = $filtered_history;
+    return $params;
+}, 10, 2);
+```
+
+#### `baachal_conversation_history`
+
+**Description:** Filter conversation history before sending to AI provider (new in v1.0.4).
+**Parameters:** `$history` - Array of conversation messages, `$session_id` - Session ID
+**Return:** Array of conversation messages
+
+**Example:**
+
+```php
+add_filter('baachal_conversation_history', function($history, $session_id) {
+    // Add custom context or filter messages
+    foreach ($history as &$message) {
+        if ($message['role'] === 'user') {
+            // Enhance user messages with additional context
+            $message['content'] = '[Customer] ' . $message['content'];
+        }
+    }
+    return $history;
+}, 10, 2);
+```
+
+#### `baachal_memory_limit`
+
+**Description:** Dynamically modify the conversation memory limit (new in v1.0.4).
+**Parameters:** `$limit` - Number of messages to remember, `$session_id` - Session ID
+**Return:** Number
+
+**Example:**
+
+```php
+add_filter('baachal_memory_limit', function($limit, $session_id) {
+    // Premium users get more memory
+    if (user_has_premium_plan()) {
+        return 25; // Increased memory for premium users
+    }
+    return $limit; // Default limit for regular users
+}, 10, 2);
+```
 
 #### `baachal_bot_response`
 

@@ -52,15 +52,3 @@ if (!defined('ABSPATH')) {
         </td>
     </tr>
 </table>
-
-<?php if (class_exists('WooCommerce')): ?>
-<h3>Features Available:</h3>
-<ul>
-    <li>✅ Product search and recommendations</li>
-    <li>✅ Category-based product filtering</li>
-    <li>✅ Product attribute matching</li>
-    <li>✅ Inventory status information</li>
-    <li>✅ Pricing information</li>
-    <li>✅ Direct product links</li>
-</ul>
-<?php endif; ?>

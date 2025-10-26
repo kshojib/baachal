@@ -38,6 +38,7 @@ Transform your WordPress website with an intelligent AI chatbot powered by multi
 - **Extensible Architecture**: Rich hooks and filters for customization
 - **Conversation Management**: Full admin dashboard for chat oversight
 - **Performance Optimized**: Intelligent caching and efficient queries
+- **Conversational Memory**: Optional context-aware conversations that remember previous messages
 
 ### 🔒 Security & Privacy
 
@@ -114,9 +115,15 @@ Transform your WordPress website with an intelligent AI chatbot powered by multi
    - Set product recommendation limits
 
 4. **Content Indexing** (Recommended):
+
    - Enable automatic content indexing
    - Select post types to include
    - Configure search relevance settings
+
+5. **Advanced Settings** (Optional):
+   - Enable conversational memory for context-aware responses
+   - Set memory limit (number of previous messages to remember)
+   - Configure debug mode and other advanced options
 
 ## AI Models Available
 
@@ -200,7 +207,24 @@ Transform your WordPress website with an intelligent AI chatbot powered by multi
    - Adjust content indexing frequency
    - Enable/disable debug mode for troubleshooting
 
-## Advanced Features
+### Advanced Features
+
+### Conversational Memory
+
+The plugin includes an optional conversational memory feature that enables context-aware conversations:
+
+- **Context Retention**: AI remembers previous messages in the conversation
+- **Configurable Memory Limit**: Set how many previous messages to include (1-50)
+- **API Cost Management**: Higher memory limits provide more context but may increase API costs
+- **Per-Session Memory**: Each chat session maintains its own conversation history
+- **Smart Context Building**: Automatically formats conversation history for optimal AI understanding
+
+**To Enable:**
+
+1. Go to **Settings > Baachal AI Bot > Advanced**
+2. Check "Conversational Memory"
+3. Set desired memory limit (recommended: 10-15 messages)
+4. Save settings
 
 ### Content Indexing System
 
@@ -361,6 +385,28 @@ Enable debug mode in **Advanced Settings** for detailed logging:
 - Error tracking
 
 ## Changelog
+
+### Version 1.0.4 - October 26, 2025
+
+#### 🚀 New Features
+
+- ✨ **Conversational Memory**: AI now remembers previous messages in conversations for better context
+- 🧠 **Smart Context Management**: Configurable memory limit (1-50 messages) with API cost optimization
+- 💬 **Enhanced Conversations**: More natural, context-aware responses that reference previous exchanges
+- ⚙️ **Advanced Settings**: New conversational memory controls in Advanced settings tab
+
+#### 🔧 Technical Improvements
+
+- 🔄 **Multi-Provider Context**: Conversation history support for all AI providers (Gemini, OpenAI, Claude, Grok)
+- 📝 **Optimized API Calls**: Intelligent conversation formatting for each AI provider's specific requirements
+- 🎯 **Memory Management**: Efficient conversation history storage and retrieval
+- 🛡️ **Backward Compatibility**: Conversational memory is optional and disabled by default
+
+#### 🎨 UI/UX Enhancements
+
+- 📊 **Admin Interface**: New settings for conversation memory configuration
+- 📖 **Better Documentation**: Updated help text and feature descriptions
+- ✅ **Feature List Update**: Advanced tab now reflects conversational capabilities
 
 ### Version 1.0.0 - January 15, 2025
 

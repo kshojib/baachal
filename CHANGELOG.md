@@ -5,6 +5,48 @@ All notable changes to the Baachal AI Chatbot plugin will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2025-10-26
+
+### 🚀 Major New Features
+
+- **Conversational Memory**: AI now remembers previous messages in conversations for significantly improved context awareness
+  - Context-aware responses that reference previous exchanges in the conversation
+  - Configurable memory limit (1-50 messages) to balance context quality with API costs
+  - Per-session conversation history maintained throughout the chat
+  - Intelligent conversation formatting optimized for each AI provider
+
+### 🔧 Technical Enhancements
+
+- **Multi-Provider Context Support**: All AI providers (Gemini, OpenAI, Claude, Grok) now support conversation history
+  - Google Gemini: Enhanced multi-turn conversation with system context separation
+  - OpenAI ChatGPT: Proper message history with system/user/assistant roles
+  - Anthropic Claude: System message with conversation history support
+  - xAI Grok: Full conversation context with system prompts
+- **Smart API Integration**: Each AI provider receives conversation history in their optimal format
+- **Memory Management**: Efficient conversation storage with configurable limits and automatic cleanup
+- **Backward Compatibility**: Feature is optional and disabled by default for existing installations
+
+### 🎨 Admin Interface Improvements
+
+- **Advanced Settings Tab**: New conversational memory configuration options
+  - Toggle to enable/disable conversational memory
+  - Memory limit slider with cost optimization guidance
+  - Clear documentation about feature benefits and API impact
+- **Feature Documentation**: Updated admin interface with comprehensive help text
+- **Settings Integration**: Seamless integration with existing settings infrastructure
+
+### 🛡️ Security & Performance
+
+- **Safe Context Handling**: Proper sanitization and validation of conversation history
+- **Performance Optimized**: Intelligent memory limiting to prevent excessive API token usage
+- **Settings Validation**: Robust input validation for memory limit settings (1-50 range)
+
+### 📖 Documentation Updates
+
+- **Comprehensive Guide**: Updated README with conversational memory setup instructions
+- **Feature Showcase**: Enhanced feature list highlighting conversational capabilities
+- **Usage Examples**: Clear examples of how conversational memory improves user experience
+
 ## [1.0.3] - 2025-10-19
 
 ### 🔒 Major Security Fixes
